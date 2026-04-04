@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DevFoundry.API/DevFoundry.API.csproj" />
+    <Project Path="src/DevFoundry.Application/DevFoundry.Application.csproj" />
+    <Project Path="src/DevFoundry.Domain/DevFoundry.Domain.csproj" />
+    <Project Path="src/DevFoundry.Infrastructure/DevFoundry.Infrastructure.csproj" />
+  </Folder>
+</Solution>
