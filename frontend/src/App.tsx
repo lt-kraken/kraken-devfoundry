@@ -1,15 +1,24 @@
 import { LessonWorkspace } from './features/course/LessonWorkspace'
 import { useLessonWorkspace } from './hooks/useLessonWorkspace'
 import { LearningLayout } from './layouts/LearningLayout'
+import { SubmissionResultModal } from './components/SubmissionResultModal'
 
 function App() {
   const {
     lesson,
+    courseTitle,
     xp,
     runResult,
     isSubmitting,
     isLoading,
     aiHint,
+    submitError,
+    canSubmit,
+    totalSteps,
+    canMarkStepsFromRun,
+    isCompletionModalOpen,
+    completionResult,
+    completedCount,
     setActiveFile,
     updateCode,
     toggleStep,
@@ -17,10 +26,14 @@ function App() {
     runCurrentCode,
     submitTask,
     getHint,
+    markAllStepsFromPassingRun,
+    loadLessonById,
+    goToNextLesson,
+    closeCompletionModal,
   } = useLessonWorkspace()
 
-  const handleSelectLesson = () => {
-    // The MVP seed includes one lesson; lesson navigation UI is present for future backend data.
+  const handleSelectLesson = (lessonId: string) => {
+    void loadLessonById(lessonId)
   }
 
   if (isLoading || !lesson) {
@@ -34,16 +47,24 @@ function App() {
   return (
     <LearningLayout
       xp={xp}
-      courseTitle="JavaScript Foundations"
+      courseTitle={courseTitle}
       sections={lesson.sections}
       activeLessonId={lesson.id}
       onSelectLesson={handleSelectLesson}
     >
+      {submitError ? (
+        <div className="border-b border-rose-300/60 bg-rose-50 px-4 py-2 text-sm text-rose-700">{submitError}</div>
+      ) : null}
+
       <LessonWorkspace
         lesson={lesson}
         runResult={runResult}
         isSubmitting={isSubmitting}
         aiHint={aiHint}
+        canSubmit={canSubmit}
+        completedCount={completedCount}
+        totalSteps={totalSteps}
+        canMarkStepsFromRun={canMarkStepsFromRun}
         onSelectFile={setActiveFile}
         onUpdateCode={updateCode}
         onRun={runCurrentCode}
@@ -51,7 +72,18 @@ function App() {
         onSubmit={submitTask}
         onToggleStep={toggleStep}
         onRequestHint={getHint}
+        onMarkFromPassingRun={markAllStepsFromPassingRun}
       />
+
+      {isCompletionModalOpen && completionResult ? (
+        <SubmissionResultModal
+          result={completionResult}
+          onClose={closeCompletionModal}
+          onNextLesson={() => {
+            void goToNextLesson()
+          }}
+        />
+      ) : null}
     </LearningLayout>
   )
 }

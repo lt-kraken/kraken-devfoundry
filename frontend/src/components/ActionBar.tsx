@@ -5,9 +5,20 @@ type ActionBarProps = {
   onReset: () => void
   onSubmit: () => void
   isSubmitting: boolean
+  canSubmit: boolean
+  completedCount: number
+  totalSteps: number
 }
 
-export function ActionBar({ onRun, onReset, onSubmit, isSubmitting }: ActionBarProps) {
+export function ActionBar({
+  onRun,
+  onReset,
+  onSubmit,
+  isSubmitting,
+  canSubmit,
+  completedCount,
+  totalSteps,
+}: ActionBarProps) {
   return (
     <div className="flex items-center justify-between gap-3 border-t border-slate-300/70 bg-white px-3 py-2">
       <div className="flex items-center gap-2">
@@ -30,7 +41,7 @@ export function ActionBar({ onRun, onReset, onSubmit, isSubmitting }: ActionBarP
         <button
           type="button"
           onClick={onSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || !canSubmit}
           className="inline-flex items-center gap-1 rounded-md bg-amber-500 px-3 py-2 text-xs font-semibold text-slate-900 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <SendHorizontal className="h-3.5 w-3.5" />
@@ -38,7 +49,12 @@ export function ActionBar({ onRun, onReset, onSubmit, isSubmitting }: ActionBarP
         </button>
       </div>
 
-      <p className="hidden text-[11px] text-slate-500 md:block">Shortcuts: Run Ctrl+Enter, Reset Ctrl+R</p>
+      <div className="text-right">
+        <p className="hidden text-[11px] text-slate-500 md:block">Shortcuts: Run Ctrl+Enter, Reset Ctrl+R</p>
+        <p className="text-[11px] text-slate-500">
+          Steps: {completedCount}/{totalSteps}
+        </p>
+      </div>
     </div>
   )
 }

@@ -16,7 +16,8 @@ public interface ILearningContentService
 /// </summary>
 public interface IProgressService
 {
-    Task<ProgressResponse> SaveProgressAsync(ProgressRequest request, CancellationToken cancellationToken);
+    Task<CourseProgressSnapshotResponse> GetCourseProgressAsync(Guid userId, Guid courseId, CancellationToken cancellationToken);
+    Task<ProgressResult> SaveProgressAsync(ProgressRequest request, CancellationToken cancellationToken);
 }
 
 /// <summary>

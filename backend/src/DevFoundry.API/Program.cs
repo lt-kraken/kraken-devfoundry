@@ -14,7 +14,7 @@ builder.Services.AddCors(options =>
 	options.AddPolicy(
 		"frontend",
 		policy => policy
-			.WithOrigins("http://localhost:5173")
+			.WithOrigins("http://localhost:5173", "http://localhost:5174")
 			.AllowAnyHeader()
 			.AllowAnyMethod());
 });
@@ -42,7 +42,22 @@ app.MapGet("/lessons/{id:guid}", async (Guid id, ILearningContentService service
 
 app.MapPost("/progress", async (ProgressRequest request, IProgressService service, CancellationToken cancellationToken) =>
 {
-	var response = await service.SaveProgressAsync(request, cancellationToken);
+	var result = await service.SaveProgressAsync(request, cancellationToken);
+	if (!result.Succeeded)
+	{
+		return Results.BadRequest(new
+		{
+			errorCode = result.ErrorCode,
+			message = result.ErrorMessage,
+		});
+	}
+
+	return Results.Ok(result.Progress);
+});
+
+app.MapGet("/progress/{userId:guid}/{courseId:guid}", async (Guid userId, Guid courseId, IProgressService service, CancellationToken cancellationToken) =>
+{
+	var response = await service.GetCourseProgressAsync(userId, courseId, cancellationToken);
 	return Results.Ok(response);
 });
 

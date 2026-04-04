@@ -47,3 +47,12 @@ export type RunResult = {
   output: string[]
   runtimeMs?: number
 }
+
+export type SubmitProgressResult = {
+  xpDelta: number
+  totalXp: number
+  nextLessonId?: string
+  lessonCompleted: boolean
+  courseCompleted: boolean
+  message: string
+}

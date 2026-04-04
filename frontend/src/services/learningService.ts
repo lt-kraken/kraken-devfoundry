@@ -1,5 +1,5 @@
-import { mockLesson } from '../data/mockLesson'
-import type { LessonDetail, RunResult } from '../types/learning'
+import { getMockLessonById, getMockNextLessonId, mockLesson, mockLessons } from '../data/mockLesson'
+import type { LessonDetail, RunResult, SubmitProgressResult } from '../types/learning'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 const useApi = import.meta.env.VITE_USE_API === 'true'
@@ -7,7 +7,9 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5282'
 
 type CourseResponse = {
   id: string
+  title: string
   firstLessonId?: string
+  lessons: { id: string; title: string }[]
 }
 
 type LessonResponse = {
@@ -19,16 +21,94 @@ type LessonResponse = {
   files: { path: string; language: 'javascript' | 'typescript' | 'html' | 'css' | 'json'; starterCode: string }[]
 }
 
-export async function getLesson(): Promise<LessonDetail> {
+type ProgressResponse = {
+  totalXp: number
+  earnedXp: number
+  nextLessonId?: string
+  lessonCompleted: boolean
+  courseCompleted: boolean
+  message: string
+}
+
+type CourseProgressResponse = {
+  totalXp: number
+  completedLessonIds: string[]
+}
+
+const activeUserId = '00000000-0000-0000-0000-000000000001'
+let activeCourseId = 'mock-course-js-foundations'
+let activeCourseTitle = 'JavaScript Foundations'
+let activeTotalXp = 240
+let activeSections = structuredClone(mockLesson.sections)
+
+const syncCompletionInSections = (completedLessonId: string) => {
+  activeSections = activeSections.map((section) => ({
+    ...section,
+    items: section.items.map((item) =>
+      item.id === completedLessonId ? { ...item, completed: true } : item,
+    ),
+  }))
+}
+
+const buildApiSections = (
+  courses: CourseResponse[],
+  courseId: string,
+  completedLessonIdsFromProgress: Set<string>,
+) => {
+  const selectedCourse = courses.find((course) => course.id === courseId) ?? courses[0]
+  if (!selectedCourse) {
+    return structuredClone(mockLesson.sections)
+  }
+
+  const completedLessonIds = new Set([
+    ...activeSections.flatMap((section) =>
+      section.items.filter((item) => item.completed).map((item) => item.id),
+    ),
+    ...completedLessonIdsFromProgress,
+  ])
+
+  activeCourseId = selectedCourse.id
+  activeCourseTitle = selectedCourse.title
+  activeSections = [
+    {
+      id: 'guided-path',
+      title: 'Guided Path',
+      items: selectedCourse.lessons.map((lesson) => ({
+        id: lesson.id,
+        title: lesson.title,
+        completed: completedLessonIds.has(lesson.id),
+      })),
+    },
+  ]
+
+  return structuredClone(activeSections)
+}
+
+export async function getLesson(lessonId?: string): Promise<LessonDetail> {
   if (useApi) {
     try {
       const coursesResponse = await fetch(`${apiBaseUrl}/courses`)
       if (!coursesResponse.ok) throw new Error(`Failed to fetch courses: ${coursesResponse.status}`)
       const courses = (await coursesResponse.json()) as CourseResponse[]
       const firstCourse = courses[0]
+      const selectedCourseId = firstCourse?.id ?? activeCourseId
 
-      if (firstCourse?.firstLessonId) {
-        const lessonResponse = await fetch(`${apiBaseUrl}/lessons/${firstCourse.firstLessonId}`)
+      let progress: CourseProgressResponse | null = null
+      if (selectedCourseId) {
+        const progressResponse = await fetch(`${apiBaseUrl}/progress/${activeUserId}/${selectedCourseId}`)
+        if (progressResponse.ok) {
+          progress = (await progressResponse.json()) as CourseProgressResponse
+        }
+      }
+
+      activeTotalXp = progress?.totalXp ?? activeTotalXp
+      const completedLessonIds = new Set(progress?.completedLessonIds ?? [])
+
+      const targetLessonId = lessonId ?? firstCourse?.firstLessonId
+      const sections = buildApiSections(courses, selectedCourseId, completedLessonIds)
+
+      if (targetLessonId) {
+        const lessonResponse = await fetch(`${apiBaseUrl}/lessons/${targetLessonId}`)
         if (!lessonResponse.ok) throw new Error(`Failed to fetch lesson: ${lessonResponse.status}`)
         const lesson = (await lessonResponse.json()) as LessonResponse
 
@@ -37,13 +117,7 @@ export async function getLesson(): Promise<LessonDetail> {
           title: lesson.title,
           description: lesson.description,
           xpReward: lesson.xpReward,
-          sections: [
-            {
-              id: 'api-section',
-              title: 'Guided Path',
-              items: [{ id: lesson.id, title: lesson.title, completed: false }],
-            },
-          ],
+          sections,
           steps: lesson.steps,
           hints: [
             {
@@ -68,18 +142,22 @@ export async function getLesson(): Promise<LessonDetail> {
   }
 
   await wait(180)
-  return structuredClone(mockLesson)
+  const nextMockLesson = getMockLessonById(lessonId ?? mockLesson.id)
+  return {
+    ...nextMockLesson,
+    sections: structuredClone(activeSections),
+  }
 }
 
-export async function runCode(code: string): Promise<RunResult> {
+export async function runCode(lessonId: string, code: string): Promise<RunResult> {
   if (useApi) {
     try {
       const response = await fetch(`${apiBaseUrl}/code/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: '00000000-0000-0000-0000-000000000001',
-          lessonId: '00000000-0000-0000-0000-000000000001',
+          userId: activeUserId,
+          lessonId,
           language: 'javascript',
           sourceCode: code,
         }),
@@ -123,43 +201,92 @@ export async function runCode(code: string): Promise<RunResult> {
   }
 }
 
-export async function submitProgress(completedSteps: string[]): Promise<{ xpDelta: number }> {
+export async function submitProgress(lessonId: string, completedSteps: string[]): Promise<SubmitProgressResult> {
   if (useApi) {
     try {
       const response = await fetch(`${apiBaseUrl}/progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: '00000000-0000-0000-0000-000000000001',
-          courseId: '00000000-0000-0000-0000-000000000001',
-          lessonId: '00000000-0000-0000-0000-000000000001',
+          userId: activeUserId,
+          courseId: activeCourseId,
+          lessonId,
           completedStepIds: completedSteps,
         }),
       })
 
-      if (!response.ok) throw new Error(`Progress submission failed: ${response.status}`)
+      if (!response.ok) {
+        const errorPayload = (await response.json()) as { message?: string }
+        throw new Error(errorPayload.message ?? `Progress submission failed: ${response.status}`)
+      }
 
-      const payload = (await response.json()) as { earnedXp: number }
-      return { xpDelta: payload.earnedXp }
+      const payload = (await response.json()) as ProgressResponse
+      syncCompletionInSections(lessonId)
+      activeTotalXp = payload.totalXp
+
+      return {
+        xpDelta: payload.earnedXp,
+        totalXp: payload.totalXp,
+        nextLessonId: payload.nextLessonId,
+        lessonCompleted: payload.lessonCompleted,
+        courseCompleted: payload.courseCompleted,
+        message: payload.message,
+      }
     } catch (error) {
       console.error('[learningService] Failed to submit progress via API, falling back to mock:', error)
+      throw error
     }
   }
 
   await wait(280)
-  return { xpDelta: completedSteps.length >= 3 ? 120 : 40 }
+  const hasAllSteps = completedSteps.length >= 3
+  if (!hasAllSteps) {
+    throw new Error('Complete all required steps before submitting.')
+  }
+
+  const nextLessonId = getMockNextLessonId(lessonId)
+  syncCompletionInSections(lessonId)
+
+  activeTotalXp += 120
+
+  return {
+    xpDelta: 120,
+    totalXp: activeTotalXp,
+    nextLessonId,
+    lessonCompleted: true,
+    courseCompleted: !nextLessonId,
+    message: nextLessonId
+      ? 'Lesson complete. Ready for the next task.'
+      : 'Lesson complete. Course complete!',
+  }
 }
 
-export async function requestHint(stepId: string): Promise<string> {
+export function getActiveCourseTitle(): string {
+  return activeCourseTitle
+}
+
+export function getActiveSections(): LessonDetail['sections'] {
+  return structuredClone(activeSections)
+}
+
+export function getMockLessonIds(): string[] {
+  return mockLessons.map((lesson) => lesson.id)
+}
+
+export function getActiveTotalXp(): number {
+  return activeTotalXp
+}
+
+export async function requestHint(lessonId: string, stepId: string, currentCode: string): Promise<string> {
   if (useApi) {
     try {
       const response = await fetch(`${apiBaseUrl}/ai/hint`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lessonId: '00000000-0000-0000-0000-000000000001',
+          lessonId,
           stepId,
-          currentCode: '',
+          currentCode,
         }),
       })
 

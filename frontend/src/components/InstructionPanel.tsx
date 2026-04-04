@@ -9,8 +9,10 @@ type InstructionPanelProps = {
   steps: LessonStep[]
   xpReward: number
   aiHint: string
+  canMarkStepsFromRun: boolean
   onToggleStep: (stepId: string) => void
   onRequestHint: (stepId: string) => void
+  onMarkFromPassingRun: () => void
 }
 
 export function InstructionPanel({
@@ -19,10 +21,13 @@ export function InstructionPanel({
   steps,
   xpReward,
   aiHint,
+  canMarkStepsFromRun,
   onToggleStep,
   onRequestHint,
+  onMarkFromPassingRun,
 }: InstructionPanelProps) {
   const [isHintOpen, setIsHintOpen] = useState(true)
+  const completedCount = steps.filter((step) => step.completed).length
 
   return (
     <aside className="w-full border-l border-slate-300/70 bg-white lg:w-[340px]">
@@ -33,7 +38,22 @@ export function InstructionPanel({
 
       <div className="space-y-6 p-4">
         <section>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Steps</h3>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Steps</h3>
+            <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
+              {completedCount}/{steps.length}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onMarkFromPassingRun}
+            disabled={!canMarkStepsFromRun}
+            className="mb-3 w-full rounded-md border border-cyan-700/30 bg-cyan-700/10 px-3 py-2 text-xs font-semibold text-cyan-900 transition hover:bg-cyan-700/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Mark all steps from passing run
+          </button>
+
           <div className="space-y-2">
             {steps.map((step) => (
               <label
