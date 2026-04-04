@@ -40,3 +40,53 @@ When you learn a crucial fact that is likely to help future agents:
 - Put stable repo-wide guidance in this file.
 - Put verified operational facts and near-term handoff context in repo memory.
 - Keep ports, current failures, temporary workarounds, and local machine state out of this file unless they become stable project conventions.
+
+## Parallel Website Development
+
+**This repository supports pair-programming workflows** with multiple agents working on independent website slices simultaneously. Use these customizations to keep sessions focused and prevent merge conflicts:
+
+### Getting Started with a Slice
+
+1. **Read the slice registry**: `.github/agent-context/website-slices.md` (source of truth for file ownership)
+2. **Start a new slice session**: Use `/` in chat and select `start-website-slice` prompt
+3. **Specify your slice**: e.g., `instruction-panel`, `editor-files`, `navigation-shell`, `execution-console`, or `integration-service`
+4. **Stay within boundaries**: Edit only owned files; do not touch blocked files or shared orchestration files
+5. **When done, provide a handoff**: Give the next agent a summary of what you've completed
+
+### Resume In-Progress Work
+
+1. **Continue a slice session**: Use `/` in chat and select `continue-website-slice` prompt
+2. **Paste the prior handoff**: Include the previous agent's summary or session reference
+3. **Verify current state**: Confirm files match the handoff description
+4. **Continue from the next step**: Minimal context rehydration needed
+
+### Website Slices
+
+| Slice | Owned Files | Independence |
+|-------|-----------|--------------|
+| `navigation-shell` | Topbar.tsx, CourseSidebar.tsx | ⭐⭐⭐⭐ |
+| `instruction-panel` | InstructionPanel.tsx | ⭐⭐⭐⭐⭐ |
+| `editor-files` | CodeEditorPanel.tsx, FileExplorer.tsx | ⭐⭐⭐⭐ |
+| `execution-console` | ActionBar.tsx, StatusConsole.tsx | ⭐⭐⭐⭐ |
+| `integration-service` | learningService.ts, mockLesson.ts | ⭐⭐⭐ |
+
+### Parallel Development Rules
+
+**Respect slice ownership**: Each slice owns its files. Do not edit files outside your slice unless explicitly permitted by the session prompt.
+
+**No unrelated conflict resolution**: If you find code outside your slice that looks incomplete or has conflicts, ignore it. It likely belongs to another active session. Only fix conflicts in your owned files.
+
+**Do not "helpfully" refactor adjacent systems**: Do not optimize, reformat, or improve code in other slices. Stay focused on your slice's task goal.
+
+**Escalate shared-file changes**: If your task requires modifying shared files (`frontend/src/types/learning.ts`, `frontend/src/hooks/useLessonWorkspace.ts`, `frontend/src/features/course/LessonWorkspace.tsx`, `frontend/src/services/learningService.ts`), stop and request a contract-change session rather than pushing through opportunistic edits.
+
+**Handoff cleanly**: When your session ends, provide a brief summary: what you completed, current state of files, next steps, any blockers. The next agent will use this to resume with minimal rework.
+
+### Customization Files
+
+- **Slice Registry**: `.github/agent-context/website-slices.md` — file ownership, boundaries, responsibilities
+- **Start Session Prompt**: `.github/prompts/start-website-slice.prompt.md` — bootstrap a focused slice session
+- **Continue Session Prompt**: `.github/prompts/continue-website-slice.prompt.md` — resume from a prior handoff
+- **Slice Implementer Agent**: `.github/agents/website-slice-implementer.agent.md` — focused coding agent for one slice
+- **Slice Scout Agent**: `.github/agents/website-slice-scout.agent.md` — read-only discovery before implementation
+- **Auto-Reminder Hook**: `.github/hooks/pair-programming-context.json` — lightweight reminder at session start

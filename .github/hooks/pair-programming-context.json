@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "echo 'Kraken DevFoundry Pair-Programming Reminder:\n1. Check .github/agent-context/website-slices.md for your slice boundaries.\n2. Do not edit files outside your assigned slice.\n3. Do not resolve unrelated conflicts or refactor adjacent systems.\n4. If you need to edit a shared file or blocked file, stop and ask.\n5. When stopping, provide a handoff summary to the next agent.\n6. Persist crucial reusable findings to repo memory; ignore transient noise.\n\nUse the start-website-slice or continue-website-slice prompts to begin.\n'",
+        "windows": "powershell -NoProfile -Command \"Write-Host 'Kraken DevFoundry Pair-Programming Reminder:' -ForegroundColor Cyan; Write-Host '1. Check .github/agent-context/website-slices.md for your slice boundaries.' -ForegroundColor White; Write-Host '2. Do not edit files outside your assigned slice.' -ForegroundColor White; Write-Host '3. Do not resolve unrelated conflicts or refactor adjacent systems.' -ForegroundColor White; Write-Host '4. If you need to edit a shared file or blocked file, stop and ask.' -ForegroundColor White; Write-Host '5. When stopping, provide a handoff summary to the next agent.' -ForegroundColor White; Write-Host '6. Persist crucial reusable findings to repo memory; ignore transient noise.' -ForegroundColor White; Write-Host '' -ForegroundColor White; Write-Host 'Use the start-website-slice or continue-website-slice prompts to begin.' -ForegroundColor Cyan\"",
+        "timeout": 10
+      }
+    ]
+  }
+}
