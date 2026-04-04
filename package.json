@@ -1,0 +1,12 @@
+{
+  "name": "kraken-devfoundry",
+  "description": "Coding-learning platform (frontend + backend)",
+  "private": true,
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && dotnet run --project src/DevFoundry.API/DevFoundry.API.csproj",
+    "dev": "npm run dev:frontend",
+    "build:frontend": "cd frontend && npm run build",
+    "lint:frontend": "cd frontend && npm run lint"
+  }
+}
