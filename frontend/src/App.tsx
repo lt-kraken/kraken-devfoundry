@@ -1,12 +1,15 @@
 import { LessonWorkspace } from './features/course/LessonWorkspace'
 import { useLessonWorkspace } from './hooks/useLessonWorkspace'
+import { useTheme } from './hooks/useTheme'
 import { LearningLayout } from './layouts/LearningLayout'
 import { SubmissionResultModal } from './components/SubmissionResultModal'
 import { CodeComparisonPanel } from './components/CodeComparisonPanel'
 import { TrackRecommendationBanner } from './components/TrackRecommendationBanner'
+import { BranchSelectorModal } from './components/BranchSelectorModal'
 import { getBranchedLessonIds } from './data/mockLesson'
 
 function App() {
+  const { theme, resolvedTheme, setTheme } = useTheme()
   const {
     lesson,
     courseTitle,
@@ -24,6 +27,7 @@ function App() {
     learningTrack,
     activeBranchOption,
     selectedBranchId,
+    isBranchModalOpen,
     showCodeComparison,
     activeFile,
     setActiveFile,
@@ -37,6 +41,9 @@ function App() {
     goToNextLesson,
     closeCompletionModal,
     updateLearningTrack,
+    openBranchModal,
+    closeBranchModal,
+    handleBranchSelected,
     handleShowSolution,
     handleCloseSolution,
   } = useLessonWorkspace()
@@ -47,7 +54,7 @@ function App() {
 
   if (isLoading || !lesson) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-600">
+      <main className="flex min-h-screen items-center justify-center bg-[var(--bg-base)] text-sm text-[var(--text-muted)]">
         Loading workspace...
       </main>
     )
@@ -65,9 +72,11 @@ function App() {
       activeLessonId={lesson.id}
       onSelectLesson={handleSelectLesson}
       branchedLessonIds={getBranchedLessonIds()}
+      theme={theme}
+      onChangeTheme={setTheme}
     >
       {submitError ? (
-        <div className="border-b border-rose-300/60 bg-rose-50 px-4 py-2 text-sm text-rose-700">{submitError}</div>
+        <div className="border-b border-[var(--accent-rose)]/30 bg-[var(--accent-rose)]/8 px-4 py-2 text-sm text-[var(--accent-rose)]">{submitError}</div>
       ) : null}
 
       {lesson.branchPoint && activeBranchOption ? (
@@ -75,6 +84,7 @@ function App() {
           learningTrack={learningTrack}
           branchOption={activeBranchOption}
           selectedBranchId={selectedBranchId}
+          onPickDifferentApproach={openBranchModal}
         />
       ) : null}
 
@@ -86,6 +96,7 @@ function App() {
         canSubmit={canSubmit}
         completedCount={completedCount}
         totalSteps={totalSteps}
+        resolvedTheme={resolvedTheme}
         onSelectFile={setActiveFile}
         onUpdateCode={updateCode}
         onRun={runCurrentCode}
@@ -115,6 +126,17 @@ function App() {
               : activeFile.starterContent
           }
           onClose={handleCloseSolution}
+        />
+      ) : null}
+
+      {lesson.branchPoint && isBranchModalOpen ? (
+        <BranchSelectorModal
+          branchPoint={lesson.branchPoint}
+          selectedBranchId={selectedBranchId}
+          onClose={closeBranchModal}
+          onBranchSelected={(branchId) => {
+            void handleBranchSelected(branchId)
+          }}
         />
       ) : null}
     </LearningLayout>

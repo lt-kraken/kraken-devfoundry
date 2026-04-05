@@ -34,6 +34,7 @@ export function useLessonWorkspace() {
   const [completionResult, setCompletionResult] = useState<SubmitProgressResult | null>(null)
   const [learningTrack, setLearningTrackState] = useState<LearningTrack>(() => getActiveLearningTrack())
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null)
+  const [isBranchModalOpen, setIsBranchModalOpen] = useState(false)
   const [showCodeComparison, setShowCodeComparison] = useState(false)
 
   const applyLearningTrack = async (nextLesson: LessonDetail, nextTrack: LearningTrack) => {
@@ -204,6 +205,7 @@ export function useLessonWorkspace() {
     setRunResult(idleResult)
     setIsCompletionModalOpen(false)
     setSelectedBranchId(null)
+    setIsBranchModalOpen(false)
 
     try {
       const nextLesson = await getLesson(lessonId)
@@ -240,8 +242,22 @@ export function useLessonWorkspace() {
     setAiHint(await requestHint(lessonId, stepId, currentCode))
   }
 
-  const handleBranchSelected = (branchId: string) => {
+  const openBranchModal = () => {
+    setIsBranchModalOpen(true)
+  }
+
+  const closeBranchModal = () => {
+    setIsBranchModalOpen(false)
+  }
+
+  const handleBranchSelected = async (branchId: string) => {
+    if (!lesson) {
+      return
+    }
+
     setSelectedBranchId(branchId)
+    setIsBranchModalOpen(false)
+    await selectBranch(lesson.id, branchId)
   }
 
   const updateLearningTrack = async (track: LearningTrack) => {
@@ -255,6 +271,7 @@ export function useLessonWorkspace() {
     setAiHint('')
     setRunResult(idleResult)
     setSubmitError('')
+    setIsBranchModalOpen(false)
 
     const nextLesson = await getLesson(lesson.id)
     setLesson({
@@ -290,6 +307,7 @@ export function useLessonWorkspace() {
     learningTrack,
     activeBranchOption,
     selectedBranchId,
+    isBranchModalOpen,
     showCodeComparison,
     setActiveFile,
     updateCode,
@@ -302,6 +320,8 @@ export function useLessonWorkspace() {
     goToNextLesson,
     closeCompletionModal,
     updateLearningTrack,
+    openBranchModal,
+    closeBranchModal,
     handleBranchSelected,
     handleShowSolution,
     handleCloseSolution,

@@ -1,87 +1,101 @@
 import type { BranchPoint } from '../types/learning'
-import { selectBranch } from '../services/learningService'
+import clsx from 'clsx'
+import { X } from 'lucide-react'
 
 interface BranchSelectorModalProps {
-  lessonId: string
   branchPoint: BranchPoint
-  onBranchSelected: (branchId: string) => void
+  selectedBranchId: string | null
+  onBranchSelected: (branchId: string) => Promise<void> | void
+  onClose: () => void
 }
 
 export function BranchSelectorModal({
-  lessonId,
   branchPoint,
+  selectedBranchId,
   onBranchSelected,
+  onClose,
 }: BranchSelectorModalProps) {
-  const handleSelectBranch = async (branchId: string) => {
-    await selectBranch(lessonId, branchId)
-    onBranchSelected(branchId)
-  }
-
-  const getDifficultyColor = (difficulty?: string) => {
+  const getDifficultyTone = (difficulty?: string) => {
     switch (difficulty) {
       case 'beginner':
-        return 'text-green-600'
+        return 'border-emerald-400/30 bg-emerald-400/10 text-emerald-400'
       case 'intermediate':
-        return 'text-yellow-600'
+        return 'border-amber-400/30 bg-amber-400/10 text-amber-400'
       case 'advanced':
-        return 'text-red-600'
+        return 'border-rose-400/30 bg-rose-400/10 text-rose-400'
       default:
-        return 'text-gray-600'
-    }
-  }
-
-  const getDifficultyBgColor = (difficulty?: string) => {
-    switch (difficulty) {
-      case 'beginner':
-        return 'bg-green-50'
-      case 'intermediate':
-        return 'bg-yellow-50'
-      case 'advanced':
-        return 'bg-red-50'
-      default:
-        return 'bg-gray-50'
+        return 'border-[var(--border-default)] bg-[var(--bg-surface-raised)] text-[var(--text-muted)]'
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full mx-4">
-        <div className="p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">{branchPoint.question}</h2>
-          <p className="text-gray-600 mb-8">
-            Choose your preferred approach. You can always explore a different path later.
-          </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <button type="button" className="absolute inset-0" aria-label="Close branch selection" onClick={onClose} />
 
-          <div className="grid gap-4">
-            {branchPoint.options.map((option) => (
+      <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-[var(--shadow-elevated)]">
+        <div className="border-b border-[var(--border-subtle)] p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">{branchPoint.question}</h2>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                Pick a route that fits your momentum. You can switch approaches later.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close branch selector"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[var(--border-default)] text-[var(--text-muted)] transition hover:bg-[var(--bg-surface-raised)] hover:text-[var(--text-primary)]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-[calc(90vh-96px)] space-y-3 overflow-auto p-6">
+          {branchPoint.options.map((option) => {
+            const isSelected = selectedBranchId === option.id
+
+            return (
               <button
                 key={option.id}
-                onClick={() => handleSelectBranch(option.id)}
-                className={`p-6 text-left border-2 border-gray-200 rounded-lg transition-all hover:border-blue-400 hover:shadow-md ${getDifficultyBgColor(option.difficulty)}`}
+                type="button"
+                onClick={() => onBranchSelected(option.id)}
+                className={clsx(
+                  'w-full rounded-lg border p-5 text-left transition',
+                  isSelected
+                    ? 'border-[var(--accent-cyan)]/40 bg-[var(--accent-cyan)]/10 shadow-[var(--glow-cyan)]'
+                    : 'border-[var(--border-default)] bg-[var(--bg-surface-raised)] hover:border-[var(--border-active)]',
+                )}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{option.label}</h3>
-                    <p className="text-gray-700 mb-3">{option.description}</p>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base font-semibold text-[var(--text-primary)]">{option.label}</h3>
+                    <p className="mt-2 text-sm text-[var(--text-secondary)]">{option.description}</p>
                   </div>
-                  {option.difficulty && (
-                    <div
-                      className={`ml-4 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getDifficultyColor(option.difficulty)}`}
+                  {option.difficulty ? (
+                    <span
+                      className={clsx(
+                        'whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold capitalize',
+                        getDifficultyTone(option.difficulty),
+                      )}
                     >
-                      {option.difficulty.charAt(0).toUpperCase() + option.difficulty.slice(1)}
-                    </div>
-                  )}
+                      {option.difficulty}
+                    </span>
+                  ) : null}
                 </div>
-                <div className="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                  Choose This Path
+
+                <div className={clsx(
+                  'mt-4 inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold',
+                  isSelected
+                    ? 'bg-[var(--accent-cyan)] text-slate-950'
+                    : 'bg-[var(--bg-surface-overlay)] text-[var(--text-secondary)]',
+                )}>
+                  {isSelected ? 'Current path' : 'Choose this path'}
                 </div>
               </button>
-            ))}
-          </div>
-
-          <p className="text-gray-500 text-sm mt-8 text-center">
-            💡 Tip: Both approaches teach valuable skills. Pick the one that interests you most.
-          </p>
+            )
+          })}
         </div>
       </div>
     </div>

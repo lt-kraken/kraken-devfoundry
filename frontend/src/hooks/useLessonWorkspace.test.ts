@@ -5,22 +5,36 @@ import type { LessonDetail, RunResult, SubmitProgressResult } from '../types/lea
 
 const serviceMocks = vi.hoisted(() => ({
   getLesson: vi.fn<() => Promise<LessonDetail>>(),
+  getActiveLearningTrack: vi.fn<() => 'beginner' | 'intermediate' | 'advanced'>(),
   getActiveCourseTitle: vi.fn<() => string>(),
   getActiveSections: vi.fn<() => LessonDetail['sections']>(),
   getActiveTotalXp: vi.fn<() => number>(),
+  getRecommendedBranch: vi.fn(),
+  loadLearningTrackPreference: vi.fn<() => Promise<'beginner' | 'intermediate' | 'advanced'>>(),
+  persistLearningTrackPreference: vi.fn<
+    (track: 'beginner' | 'intermediate' | 'advanced') => Promise<'beginner' | 'intermediate' | 'advanced'>
+  >(),
   requestHint: vi.fn<() => Promise<string>>(),
   runCode: vi.fn<(lessonId: string, code: string) => Promise<RunResult>>(),
+  selectBranch: vi.fn<(lessonId: string, branchId: string) => Promise<void>>(),
   submitProgress: vi.fn<(lessonId: string, completedSteps: string[]) => Promise<SubmitProgressResult>>(),
+  validateStep: vi.fn<(stepId: string, code: string, lessonId: string) => boolean>(),
 }))
 
 vi.mock('../services/learningService', () => ({
   getLesson: serviceMocks.getLesson,
+  getActiveLearningTrack: serviceMocks.getActiveLearningTrack,
   getActiveCourseTitle: serviceMocks.getActiveCourseTitle,
   getActiveSections: serviceMocks.getActiveSections,
   getActiveTotalXp: serviceMocks.getActiveTotalXp,
+  getRecommendedBranch: serviceMocks.getRecommendedBranch,
+  loadLearningTrackPreference: serviceMocks.loadLearningTrackPreference,
+  persistLearningTrackPreference: serviceMocks.persistLearningTrackPreference,
   requestHint: serviceMocks.requestHint,
   runCode: serviceMocks.runCode,
+  selectBranch: serviceMocks.selectBranch,
   submitProgress: serviceMocks.submitProgress,
+  validateStep: serviceMocks.validateStep,
 }))
 
 const baseLesson: LessonDetail = {
@@ -57,10 +71,16 @@ describe('useLessonWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     serviceMocks.getLesson.mockResolvedValue(structuredClone(baseLesson))
+    serviceMocks.getActiveLearningTrack.mockReturnValue('intermediate')
     serviceMocks.getActiveCourseTitle.mockReturnValue('JavaScript Foundations')
     serviceMocks.getActiveTotalXp.mockReturnValue(240)
     serviceMocks.getActiveSections.mockReturnValue(structuredClone(baseLesson.sections))
+    serviceMocks.getRecommendedBranch.mockReturnValue(undefined)
+    serviceMocks.loadLearningTrackPreference.mockResolvedValue('intermediate')
+    serviceMocks.persistLearningTrackPreference.mockImplementation(async (track) => track)
     serviceMocks.requestHint.mockResolvedValue('Try using map and join.')
+    serviceMocks.selectBranch.mockResolvedValue()
+    serviceMocks.validateStep.mockReturnValue(false)
   })
 
   it('auto-completes all steps after a successful run', async () => {

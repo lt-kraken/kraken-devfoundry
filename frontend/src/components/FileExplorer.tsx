@@ -30,21 +30,21 @@ export function FileExplorer({ files, activeFileId, onSelect }: FileExplorerProp
   }
 
   return (
-    <aside className="w-[220px] shrink-0 border-r border-slate-300/70 bg-slate-100/70">
-      <div className="border-b border-slate-300/70 px-3 py-2">
-        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+    <aside className="w-[220px] shrink-0 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+      <div className="border-b border-[var(--border-subtle)] px-3 py-2">
+        <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.16em] text-[var(--text-muted)]">
           <span>Files</span>
-          <span className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] text-slate-600">{files.length}</span>
+          <span className="rounded bg-[var(--bg-surface-raised)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]">{files.length}</span>
         </div>
 
-        <label className="mt-2 flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-slate-500 focus-within:border-cyan-700">
+        <label className="mt-2 flex items-center gap-1 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface-raised)] px-2 py-1 text-[var(--text-muted)] focus-within:border-[var(--border-active)]">
           <Search className="h-3.5 w-3.5" />
           <input
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Filter files"
-            className="w-full bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400"
+            className="w-full bg-transparent text-xs text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
           />
         </label>
       </div>
@@ -61,22 +61,22 @@ export function FileExplorer({ files, activeFileId, onSelect }: FileExplorerProp
             className={clsx(
               'flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-xs transition',
               file.id === activeFileId
-                ? 'bg-cyan-900 text-white'
-                : 'text-slate-700 hover:bg-slate-200 hover:text-slate-900',
+                ? 'bg-[var(--accent-cyan)]/10 text-[var(--accent-cyan)]'
+                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-raised)] hover:text-[var(--text-primary)]',
             )}
             title={file.path}
           >
             <Icon className="h-3.5 w-3.5 shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="truncate">{toFileName(file.path)}</p>
-              <p className={clsx('truncate text-[10px]', file.id === activeFileId ? 'text-cyan-100' : 'text-slate-500')}>
+              <p className={clsx('truncate text-[10px]', file.id === activeFileId ? 'text-[var(--accent-cyan)]/70' : 'text-[var(--text-muted)]')}>
                 {file.path}
               </p>
             </div>
             <span
               className={clsx(
                 'rounded px-1.5 py-0.5 text-[10px] uppercase',
-                file.id === activeFileId ? 'bg-cyan-800/70 text-cyan-100' : 'bg-slate-200 text-slate-600',
+                file.id === activeFileId ? 'bg-[var(--accent-cyan)]/15 text-[var(--accent-cyan)]' : 'bg-[var(--bg-surface-raised)] text-[var(--text-muted)]',
               )}
             >
               {file.language}
@@ -86,7 +86,7 @@ export function FileExplorer({ files, activeFileId, onSelect }: FileExplorerProp
         })}
 
         {!filteredFiles.length ? (
-          <p className="px-2 py-3 text-xs text-slate-500">No files match "{query}".</p>
+          <p className="px-2 py-3 text-xs text-[var(--text-muted)]">No files match "{query}".</p>
         ) : null}
       </div>
     </aside>

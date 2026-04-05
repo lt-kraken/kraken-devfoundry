@@ -1,13 +1,73 @@
 @import 'tailwindcss';
 
+/* ── Theme tokens ── */
+
 :root {
-  color: #0f172a;
-  font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  /* Surfaces */
+  --bg-base: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-raised: #f1f5f9;
+  --bg-surface-overlay: #e2e8f0;
+
+  /* Text */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  /* Borders */
+  --border-subtle: rgba(15, 23, 42, 0.06);
+  --border-default: rgba(15, 23, 42, 0.10);
+  --border-active: rgba(6, 182, 212, 0.5);
+
+  /* Accents (shared both themes) */
+  --accent-cyan: #06b6d4;
+  --accent-amber: #f59e0b;
+  --accent-emerald: #10b981;
+  --accent-rose: #f43f5e;
+
+  /* Glows */
+  --glow-cyan: 0 0 20px rgba(6, 182, 212, 0.12);
+  --glow-amber: 0 0 20px rgba(245, 158, 11, 0.12);
+  --glow-emerald: 0 0 20px rgba(16, 185, 129, 0.12);
+
+  /* Shadows */
+  --shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.08);
+
+  color-scheme: light;
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+.dark {
+  --bg-base: #0a0e17;
+  --bg-surface: #111827;
+  --bg-surface-raised: #1e293b;
+  --bg-surface-overlay: #334155;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --border-subtle: rgba(148, 163, 184, 0.08);
+  --border-default: rgba(148, 163, 184, 0.12);
+  --border-active: rgba(6, 182, 212, 0.4);
+
+  --glow-cyan: 0 0 20px rgba(6, 182, 212, 0.15);
+  --glow-amber: 0 0 20px rgba(245, 158, 11, 0.15);
+  --glow-emerald: 0 0 20px rgba(16, 185, 129, 0.15);
+
+  --shadow-panel: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5);
+
+  color-scheme: dark;
+}
+
+/* ── Base resets ── */
 
 * {
   box-sizing: border-box;
@@ -22,4 +82,32 @@ body,
 
 body {
   min-height: 100vh;
+  background-color: var(--bg-base);
+}
+
+/* ── Scrollbar ── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* ── Selection ── */
+
+::selection {
+  background: rgba(6, 182, 212, 0.25);
+  color: inherit;
 }
