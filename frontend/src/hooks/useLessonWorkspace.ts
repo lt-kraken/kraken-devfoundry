@@ -1,14 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  getActiveLearningTrack,
   getActiveCourseTitle,
   getActiveSections,
   getActiveTotalXp,
   getLesson,
+  getRecommendedBranch,
   requestHint,
   runCode,
+  selectBranch,
+  setActiveLearningTrack,
   submitProgress,
+  validateStep,
 } from '../services/learningService'
-import type { LessonDetail, RunResult, SubmitProgressResult } from '../types/learning'
+import type { BranchOption, LearningTrack, LessonDetail, RunResult, SubmitProgressResult } from '../types/learning'
 
 const idleResult: RunResult = {
   status: 'idle',
@@ -26,6 +31,26 @@ export function useLessonWorkspace() {
   const [submitError, setSubmitError] = useState<string>('')
   const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false)
   const [completionResult, setCompletionResult] = useState<SubmitProgressResult | null>(null)
+  const [learningTrack, setLearningTrackState] = useState<LearningTrack>(() => getActiveLearningTrack())
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null)
+  const [showBranchSelector, setShowBranchSelector] = useState(false)
+  const [showCodeComparison, setShowCodeComparison] = useState(false)
+
+  const applyLearningTrack = async (nextLesson: LessonDetail, nextTrack: LearningTrack) => {
+    if (!nextLesson.branchPoint) {
+      setSelectedBranchId(null)
+      return
+    }
+
+    const recommendedBranch = getRecommendedBranch(nextLesson.branchPoint, nextTrack)
+    if (!recommendedBranch) {
+      setSelectedBranchId(null)
+      return
+    }
+
+    setSelectedBranchId(recommendedBranch.id)
+    await selectBranch(nextLesson.id, recommendedBranch.id)
+  }
 
   useEffect(() => {
     getLesson()
@@ -33,6 +58,8 @@ export function useLessonWorkspace() {
         setLesson(nextLesson)
         setCourseTitle(getActiveCourseTitle())
         setXp(getActiveTotalXp())
+        setShowBranchSelector(false)
+        void applyLearningTrack(nextLesson, learningTrack)
       })
       .finally(() => setIsLoading(false))
   }, [])
@@ -41,6 +68,14 @@ export function useLessonWorkspace() {
     () => lesson?.files.find((file) => file.id === lesson.activeFileId),
     [lesson],
   )
+
+  const activeBranchOption = useMemo<BranchOption | null>(() => {
+    if (!lesson?.branchPoint || !selectedBranchId) {
+      return null
+    }
+
+    return lesson.branchPoint.options.find((option) => option.id === selectedBranchId) ?? null
+  }, [lesson, selectedBranchId])
 
   const completedCount = lesson?.steps.filter((step) => step.completed).length ?? 0
   const totalSteps = lesson?.steps.length ?? 0
@@ -54,11 +89,22 @@ export function useLessonWorkspace() {
     setLesson((current) => {
       if (!current) return current
 
+      // Real-time step validation as user types
+      const updatedSteps = current.steps.map((step) => {
+        const isValid = validateStep(step.id, value, current.id)
+        // Only auto-mark as complete if validation passes AND it wasn't already completed
+        return {
+          ...step,
+          completed: step.completed || isValid,
+        }
+      })
+
       return {
         ...current,
         files: current.files.map((file) =>
           file.id === current.activeFileId ? { ...file, content: value } : file,
         ),
+        steps: updatedSteps,
       }
     })
   }
@@ -153,12 +199,15 @@ export function useLessonWorkspace() {
     setAiHint('')
     setRunResult(idleResult)
     setIsCompletionModalOpen(false)
+    setSelectedBranchId(null)
 
     try {
       const nextLesson = await getLesson(lessonId)
       setLesson(nextLesson)
       setCourseTitle(getActiveCourseTitle())
       setXp(getActiveTotalXp())
+      setShowBranchSelector(false)
+      await applyLearningTrack(nextLesson, learningTrack)
     } finally {
       setIsLoading(false)
     }
@@ -185,6 +234,29 @@ export function useLessonWorkspace() {
     setAiHint(await requestHint(lessonId, stepId, currentCode))
   }
 
+  const handleBranchSelected = (branchId: string) => {
+    setSelectedBranchId(branchId)
+    setShowBranchSelector(false)
+  }
+
+  const updateLearningTrack = async (track: LearningTrack) => {
+    setLearningTrackState(setActiveLearningTrack(track))
+
+    if (!lesson) {
+      return
+    }
+
+    await applyLearningTrack(lesson, track)
+  }
+
+  const handleShowSolution = () => {
+    setShowCodeComparison(true)
+  }
+
+  const handleCloseSolution = () => {
+    setShowCodeComparison(false)
+  }
+
   return {
     lesson,
     courseTitle,
@@ -200,6 +272,11 @@ export function useLessonWorkspace() {
     completionResult,
     activeFile,
     completedCount,
+    learningTrack,
+    activeBranchOption,
+    selectedBranchId,
+    showBranchSelector,
+    showCodeComparison,
     setActiveFile,
     updateCode,
     toggleStep,
@@ -210,5 +287,9 @@ export function useLessonWorkspace() {
     loadLessonById,
     goToNextLesson,
     closeCompletionModal,
+    updateLearningTrack,
+    handleBranchSelected,
+    handleShowSolution,
+    handleCloseSolution,
   }
 }

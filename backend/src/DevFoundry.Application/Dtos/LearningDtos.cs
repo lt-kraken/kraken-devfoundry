@@ -14,13 +14,18 @@ public sealed record LessonStepDto(string Id, string Label, bool Completed);
 
 public sealed record LessonFileDto(string Path, string Language, string StarterCode);
 
+public sealed record BranchOptionDto(string Id, string Label, string Description, string? Difficulty);
+
+public sealed record BranchPointDto(string Question, IReadOnlyCollection<BranchOptionDto> Options);
+
 public sealed record LessonDetailDto(
     Guid Id,
     string Title,
     string Description,
     int XpReward,
     IReadOnlyCollection<LessonStepDto> Steps,
-    IReadOnlyCollection<LessonFileDto> Files);
+    IReadOnlyCollection<LessonFileDto> Files,
+    BranchPointDto? BranchPoint = null);
 
 public sealed record ProgressRequest(Guid UserId, Guid CourseId, Guid LessonId, IReadOnlyCollection<string> CompletedStepIds);
 

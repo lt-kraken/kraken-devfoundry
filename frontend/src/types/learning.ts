@@ -22,6 +22,27 @@ export type LessonHint = {
   content: string
 }
 
+export type LearningTrack = 'beginner' | 'intermediate' | 'advanced'
+
+export type BranchOption = {
+  id: string
+  label: string
+  description: string
+  difficulty?: LearningTrack
+}
+
+export type BranchPoint = {
+  question: string
+  options: BranchOption[]
+}
+
+export type CodeAnnotation = {
+  lineNumber: number
+  token: string
+  explanation: string
+  alternatives?: string
+}
+
 export type LessonFile = {
   id: string
   path: string
@@ -40,6 +61,8 @@ export type LessonDetail = {
   hints: LessonHint[]
   files: LessonFile[]
   activeFileId: string
+  branchPoint?: BranchPoint
+  codeAnnotations?: CodeAnnotation[]
 }
 
 export type RunResult = {

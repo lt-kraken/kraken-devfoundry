@@ -1,9 +1,17 @@
 import { getMockLessonById, getMockNextLessonId, mockLesson, mockLessons } from '../data/mockLesson'
-import type { LessonDetail, RunResult, SubmitProgressResult } from '../types/learning'
+import type {
+  BranchOption,
+  BranchPoint,
+  LearningTrack,
+  LessonDetail,
+  RunResult,
+  SubmitProgressResult,
+} from '../types/learning'
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 const useApi = import.meta.env.VITE_USE_API === 'true'
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5282'
+const learningTrackStorageKey = 'devfoundry-learning-track'
 
 type CourseResponse = {
   id: string
@@ -40,6 +48,26 @@ let activeCourseId = 'mock-course-js-foundations'
 let activeCourseTitle = 'JavaScript Foundations'
 let activeTotalXp = 240
 let activeSections = structuredClone(mockLesson.sections)
+
+const isLearningTrack = (value: string | null): value is LearningTrack =>
+  value === 'beginner' || value === 'intermediate' || value === 'advanced'
+
+const readStoredLearningTrack = (): LearningTrack => {
+  if (typeof window === 'undefined') {
+    return 'intermediate'
+  }
+
+  const storedTrack = window.localStorage.getItem(learningTrackStorageKey)
+  return isLearningTrack(storedTrack) ? storedTrack : 'intermediate'
+}
+
+let activeLearningTrack = readStoredLearningTrack()
+
+const persistLearningTrack = (track: LearningTrack) => {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(learningTrackStorageKey, track)
+  }
+}
 
 const syncCompletionInSections = (completedLessonId: string) => {
   activeSections = activeSections.map((section) => ({
@@ -277,6 +305,36 @@ export function getActiveTotalXp(): number {
   return activeTotalXp
 }
 
+export function getActiveLearningTrack(): LearningTrack {
+  return activeLearningTrack
+}
+
+export function setActiveLearningTrack(track: LearningTrack): LearningTrack {
+  activeLearningTrack = track
+  persistLearningTrack(track)
+  return activeLearningTrack
+}
+
+export function getRecommendedBranch(
+  branchPoint: BranchPoint,
+  learningTrack: LearningTrack,
+): BranchOption | undefined {
+  const fallbackOrder: Record<LearningTrack, LearningTrack[]> = {
+    beginner: ['beginner', 'intermediate', 'advanced'],
+    intermediate: ['intermediate', 'beginner', 'advanced'],
+    advanced: ['advanced', 'intermediate', 'beginner'],
+  }
+
+  for (const difficulty of fallbackOrder[learningTrack]) {
+    const match = branchPoint.options.find((option) => option.difficulty === difficulty)
+    if (match) {
+      return match
+    }
+  }
+
+  return branchPoint.options[0]
+}
+
 export async function requestHint(lessonId: string, stepId: string, currentCode: string): Promise<string> {
   if (useApi) {
     try {
@@ -301,4 +359,57 @@ export async function requestHint(lessonId: string, stepId: string, currentCode:
 
   await wait(320)
   return `AI hint for ${stepId}: keep your loop body focused, then combine the result once.`
+}
+
+export async function selectBranch(lessonId: string, branchId: string): Promise<void> {
+  if (useApi) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/progress/branch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lessonId,
+          branchId,
+          userId: activeUserId,
+          courseId: activeCourseId,
+        }),
+      })
+
+      if (!response.ok) throw new Error(`Branch selection failed: ${response.status}`)
+    } catch (error) {
+      console.error('[learningService] Failed to save branch selection via API:', error)
+      // Continue with mock fallback
+    }
+  }
+
+  await wait(100)
+  // Branch selection is saved to progress tracking
+  console.log(`[learningService] Branch selected: ${branchId} for lesson: ${lessonId}`)
+}
+
+export function validateStep(stepId: string, code: string, lessonId: string): boolean {
+  const lessonValidators: Record<string, Record<string, RegExp>> = {
+    'lesson-js-loops-1': {
+      'step-1': /for\s*\(|for\s+\w+\s+of|forEach|map\s*\(/,
+      'step-2': /\.push\(|\.concat\(|`[^`]*\$\{|join\(|\.join/,
+      'step-3': /return\s+\w+|return\s+`|return\s+\[/,
+    },
+    'lesson-js-loops-2': {
+      'step-1': /for\s*\(|for\s+\w+\s+of|map\s*\(|reduce\s*\(/,
+      'step-2': /total|sum|\+=|reduce\s*\(|\.push\(/,
+      'step-3': /return\s+\w+|return\s+`|return\s+\[/,
+    },
+    'lesson-js-loops-3': {
+      'step-1': /sort\s*\(|toSorted\s*\(/,
+      'step-2': /rank|score|name|map\s*\(|`[^`]*\$\{|join\(/,
+      'step-3': /return\s+\w+|return\s+`|return\s+\[/,
+    },
+  }
+
+  const lessonStepValidators = lessonValidators[lessonId]
+  if (lessonStepValidators?.[stepId]) {
+    return lessonStepValidators[stepId].test(code)
+  }
+
+  return code.trim().length > 0
 }

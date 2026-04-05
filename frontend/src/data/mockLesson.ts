@@ -60,6 +60,54 @@ export const mockLessons: LessonDetail[] = [
       },
     ],
     activeFileId: 'file-1',
+    branchPoint: {
+      question: 'Preferred solution path',
+      options: [
+        {
+          id: 'guided-loop-builder',
+          label: 'Guided Loop Builder',
+          description: 'Stay explicit with one clear loop and a simple result array.',
+          difficulty: 'beginner',
+        },
+        {
+          id: 'summary-array-pattern',
+          label: 'Summary Array Pattern',
+          description: 'Build each row of output in an array, then join once at the end.',
+          difficulty: 'intermediate',
+        },
+        {
+          id: 'functional-summary-pass',
+          label: 'Functional Summary Pass',
+          description: 'Lean on map and join for a shorter, more composable solution.',
+          difficulty: 'advanced',
+        },
+      ],
+    },
+    codeAnnotations: [
+      {
+        lineNumber: 3,
+        token: 'function',
+        explanation:
+          'Functions are reusable blocks of code. This function takes an array of values and processes them.',
+        alternatives: 'You could also use an arrow function: const buildSummary = (values) => { ... }',
+      },
+      {
+        lineNumber: 4,
+        token: 'for',
+        explanation:
+          'The for loop iterates through each element in the array. Start from index 0 and continue until you reach the array length.',
+        alternatives:
+          'Consider using forEach or map for a more functional approach: values.forEach((value, index) => { ... })',
+      },
+      {
+        lineNumber: 5,
+        token: 'push',
+        explanation:
+          'push() adds a new element to the end of an array. Each formatted score is added to the result array.',
+        alternatives:
+          'You could build a string directly: result += `${i + 1}. Score: ${scores[i]}\\n`',
+      },
+    ],
   },
   {
     id: 'lesson-js-loops-2',
@@ -89,6 +137,29 @@ export const mockLessons: LessonDetail[] = [
       },
     ],
     activeFileId: 'file-1',
+    branchPoint: {
+      question: 'Preferred solution path',
+      options: [
+        {
+          id: 'row-walkthrough',
+          label: 'Row-by-Row Walkthrough',
+          description: 'Use one outer loop and one inner loop with explicit running totals.',
+          difficulty: 'beginner',
+        },
+        {
+          id: 'loop-approach',
+          label: 'Manual Nested Loops',
+          description: 'Solve using traditional for loops for full control',
+          difficulty: 'intermediate',
+        },
+        {
+          id: 'functional-approach',
+          label: 'Functional Methods',
+          description: 'Use map/reduce for a more functional style',
+          difficulty: 'advanced',
+        },
+      ],
+    },
   },
   {
     id: 'lesson-js-loops-3',
@@ -118,6 +189,29 @@ export const mockLessons: LessonDetail[] = [
       },
     ],
     activeFileId: 'file-1',
+    branchPoint: {
+      question: 'Preferred solution path',
+      options: [
+        {
+          id: 'rank-then-print',
+          label: 'Rank Then Print',
+          description: 'Sort first, then format each ranked player with one straightforward pass.',
+          difficulty: 'beginner',
+        },
+        {
+          id: 'pipeline-scoreboard',
+          label: 'Pipeline Scoreboard',
+          description: 'Chain sorting and formatting to keep the solution compact and readable.',
+          difficulty: 'intermediate',
+        },
+        {
+          id: 'reducer-scoreboard',
+          label: 'Reducer Scoreboard',
+          description: 'Compose the final scoreboard through a denser functional pipeline.',
+          difficulty: 'advanced',
+        },
+      ],
+    },
   },
 ]
 
@@ -135,4 +229,8 @@ export function getMockNextLessonId(lessonId: string): string | undefined {
   }
 
   return mockLessons[index + 1]?.id
+}
+
+export function getBranchedLessonIds(): string[] {
+  return mockLessons.filter((lesson) => lesson.branchPoint).map((lesson) => lesson.id)
 }

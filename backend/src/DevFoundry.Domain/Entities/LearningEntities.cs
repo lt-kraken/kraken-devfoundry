@@ -38,6 +38,8 @@ public sealed class Lesson : EntityBase
     public required string Title { get; set; }
     public required string Description { get; set; }
     public int XpReward { get; set; }
+    public Guid? BranchPointId { get; set; }
+    public ICollection<LessonBranch> BranchOptions { get; set; } = new List<LessonBranch>();
 }
 
 public sealed class LearningTask : EntityBase
@@ -57,6 +59,7 @@ public sealed class CourseProgress : EntityBase
     public string AnswerRetentionKind { get; set; } = "none";
     public string? StoredAnswerSnapshot { get; set; }
     public DateTimeOffset? SubmittedAtUtc { get; set; }
+    public string? SelectedBranchId { get; set; }
     public ICollection<CompletedStep> CompletedSteps { get; set; } = new List<CompletedStep>();
 }
 
@@ -64,6 +67,17 @@ public sealed class CompletedStep : EntityBase
 {
     public Guid CourseProgressId { get; set; }
     public required string StepKey { get; set; }
+}
+
+public sealed class LessonBranch : EntityBase
+{
+    public Guid LessonId { get; set; }
+    public required string BranchId { get; set; }
+    public required string Label { get; set; }
+    public required string Description { get; set; }
+    public Guid? NextLessonId { get; set; }
+    public string Difficulty { get; set; } = "intermediate";
+    public int Order { get; set; }
 }
 
 public sealed class CodeRun : EntityBase

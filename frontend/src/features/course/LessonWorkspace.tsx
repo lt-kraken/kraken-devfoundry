@@ -23,6 +23,7 @@ type LessonWorkspaceProps = {
   onRun: () => void
   onReset: () => void
   onSubmit: () => void
+  onShowSolution?: () => void
   onToggleStep: (stepId: string) => void
   onRequestHint: (stepId: string) => void
 }
@@ -40,6 +41,7 @@ export function LessonWorkspace({
   onRun,
   onReset,
   onSubmit,
+  onShowSolution,
   onToggleStep,
   onRequestHint,
 }: LessonWorkspaceProps) {
@@ -75,6 +77,7 @@ export function LessonWorkspace({
               onRun={onRun}
               onReset={onReset}
               onSubmit={onSubmit}
+              onShowSolution={onShowSolution}
               isSubmitting={isSubmitting}
               canSubmit={canSubmit}
               completedCount={completedCount}

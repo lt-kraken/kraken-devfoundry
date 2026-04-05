@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, GitBranch } from 'lucide-react'
 import type { CourseSection } from '../types/learning'
 
 type CourseSidebarProps = {
@@ -7,6 +7,7 @@ type CourseSidebarProps = {
   sections: CourseSection[]
   activeLessonId: string
   onSelectLesson: (lessonId: string) => void
+  branchedLessonIds?: string[]
 }
 
 export function CourseSidebar({
@@ -14,6 +15,7 @@ export function CourseSidebar({
   sections,
   activeLessonId,
   onSelectLesson,
+  branchedLessonIds = [],
 }: CourseSidebarProps) {
   return (
     <aside className="hidden border-r border-slate-300/70 bg-slate-50/80 lg:block lg:w-72">
@@ -41,7 +43,12 @@ export function CourseSidebar({
                       : 'text-slate-700 hover:bg-slate-200/70 hover:text-slate-900',
                   )}
                 >
-                  <span>{item.title}</span>
+                  <div className="flex items-center gap-1">
+                    {branchedLessonIds.includes(item.id) && (
+                      <GitBranch className="h-3.5 w-3.5 text-blue-500" />
+                    )}
+                    <span>{item.title}</span>
+                  </div>
                   {item.completed ? <CheckCircle2 className="h-4 w-4" /> : null}
                 </button>
               ))}
