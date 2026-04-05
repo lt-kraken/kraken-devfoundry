@@ -42,10 +42,11 @@ public sealed class LearningContentService(DevFoundryDbContext context) : ILearn
             .ToList();
     }
 
-    public async Task<LessonDetailDto?> GetLessonAsync(Guid lessonId, CancellationToken cancellationToken)
+    public async Task<LessonDetailDto?> GetLessonAsync(Guid lessonId, string? learningTrack, CancellationToken cancellationToken)
     {
         var lesson = await context.Lessons
             .AsNoTracking()
+            .Include(entry => entry.BranchOptions)
             .FirstOrDefaultAsync(entry => entry.Id == lessonId, cancellationToken);
 
         if (lesson is null)
@@ -59,20 +60,44 @@ public sealed class LearningContentService(DevFoundryDbContext context) : ILearn
             .OrderBy(entry => entry.CreatedAtUtc)
             .FirstOrDefaultAsync(cancellationToken);
 
-        var steps = BuildStepsForLesson(lesson.Title);
-        var files = BuildFilesForLesson(lesson.Title);
+        var normalizedTrack = NormalizeLearningTrack(learningTrack);
+        var steps = BuildStepsForLesson(lesson.Title, normalizedTrack);
+        var files = BuildFilesForLesson(lesson.Title, normalizedTrack);
+        var hints = BuildHintsForLesson(lesson.Title, normalizedTrack);
+        var referenceCode = BuildReferenceSolutionForLesson(lesson.Title, normalizedTrack);
+        var branchPoint = BuildBranchPoint(lesson);
 
         var description = task is null
-            ? lesson.Description
-            : $"{lesson.Description} Task: {task.Prompt}";
+            ? BuildTrackDescription(lesson.Description, normalizedTrack)
+            : $"{BuildTrackDescription(lesson.Description, normalizedTrack)} Task: {task.Prompt}";
 
-        return new LessonDetailDto(lesson.Id, lesson.Title, description, lesson.XpReward, steps, files);
+        return new LessonDetailDto(lesson.Id, lesson.Title, description, lesson.XpReward, steps, files, hints, referenceCode, branchPoint);
     }
 
-    private static List<LessonStepDto> BuildStepsForLesson(string lessonTitle)
+    private static List<LessonStepDto> BuildStepsForLesson(string lessonTitle, string learningTrack)
     {
         if (lessonTitle.Contains("Nested", StringComparison.OrdinalIgnoreCase))
         {
+            if (learningTrack == "beginner")
+            {
+                return
+                [
+                    new("step-1", "Start with one outer loop over each row", false),
+                    new("step-2", "Add an inner loop and keep a running row total", false),
+                    new("step-3", "Return one clear line per row total", false),
+                ];
+            }
+
+            if (learningTrack == "advanced")
+            {
+                return
+                [
+                    new("step-1", "Transform each row into a computed total", false),
+                    new("step-2", "Compose the summary with a compact functional pass", false),
+                    new("step-3", "Return a readable multi-line result", false),
+                ];
+            }
+
             return
             [
                 new("step-1", "Use a nested loop to process matrix rows", false),
@@ -83,11 +108,51 @@ public sealed class LearningContentService(DevFoundryDbContext context) : ILearn
 
         if (lessonTitle.Contains("Scoreboard", StringComparison.OrdinalIgnoreCase))
         {
+            if (learningTrack == "beginner")
+            {
+                return
+                [
+                    new("step-1", "Copy and sort players from highest to lowest score", false),
+                    new("step-2", "Format each ranked player on its own line", false),
+                    new("step-3", "Return the scoreboard string", false),
+                ];
+            }
+
+            if (learningTrack == "advanced")
+            {
+                return
+                [
+                    new("step-1", "Create a descending scoreboard pipeline", false),
+                    new("step-2", "Compose ranked lines without mutating the input", false),
+                    new("step-3", "Return the final joined scoreboard", false),
+                ];
+            }
+
             return
             [
                 new("step-1", "Sort players by score descending", false),
                 new("step-2", "Format rank, name, and score per line", false),
                 new("step-3", "Return the final scoreboard output", false),
+            ];
+        }
+
+        if (learningTrack == "beginner")
+        {
+            return
+            [
+                new("step-1", "Write one loop that visits every score", false),
+                new("step-2", "Store each formatted line before joining", false),
+                new("step-3", "Return the combined summary string", false),
+            ];
+        }
+
+        if (learningTrack == "advanced")
+        {
+            return
+            [
+                new("step-1", "Transform the values with a concise iteration pattern", false),
+                new("step-2", "Compose formatted output without manual index bookkeeping", false),
+                new("step-3", "Return the final joined summary", false),
             ];
         }
 
@@ -99,10 +164,40 @@ public sealed class LearningContentService(DevFoundryDbContext context) : ILearn
         ];
     }
 
-    private static List<LessonFileDto> BuildFilesForLesson(string lessonTitle)
+    private static List<LessonFileDto> BuildFilesForLesson(string lessonTitle, string learningTrack)
     {
         if (lessonTitle.Contains("Nested", StringComparison.OrdinalIgnoreCase))
         {
+            if (learningTrack == "beginner")
+            {
+                return
+                [
+                    new(
+                        "src/main.js",
+                        "javascript",
+                        "const matrix = [[3, 5], [4, 2], [10, 1]];\n\nfunction buildRowTotals(rows) {\n  const lines = [];\n\n  for (const row of rows) {\n    let total = 0;\n    // TODO: add an inner loop that updates total\n    lines.push(`Row total: ${total}`);\n  }\n\n  return lines.join('\\n');\n}\n\nconsole.log(buildRowTotals(matrix));\n"),
+                    new(
+                        "README.md",
+                        "json",
+                        "{\n  \"goal\": \"Use two loops and build one line per row total\"\n}\n"),
+                ];
+            }
+
+            if (learningTrack == "advanced")
+            {
+                return
+                [
+                    new(
+                        "src/main.js",
+                        "javascript",
+                        "const matrix = [[3, 5], [4, 2], [10, 1]];\n\nfunction buildRowTotals(rows) {\n  // TODO: compute each row total with map/reduce and join the final lines\n  return '';\n}\n\nconsole.log(buildRowTotals(matrix));\n"),
+                    new(
+                        "README.md",
+                        "json",
+                        "{\n  \"goal\": \"Use a functional pass to compute row totals and format output\"\n}\n"),
+                ];
+            }
+
             return
             [
                 new(
@@ -118,6 +213,36 @@ public sealed class LearningContentService(DevFoundryDbContext context) : ILearn
 
         if (lessonTitle.Contains("Scoreboard", StringComparison.OrdinalIgnoreCase))
         {
+            if (learningTrack == "beginner")
+            {
+                return
+                [
+                    new(
+                        "src/main.js",
+                        "javascript",
+                        "const players = [{ name: 'Ari', score: 18 }, { name: 'Mina', score: 27 }, { name: 'Rex', score: 22 }];\n\nfunction buildScoreboard(entries) {\n  const rankedPlayers = [...entries].sort((a, b) => b.score - a.score);\n  const lines = [];\n\n  // TODO: loop over rankedPlayers and push one line per player\n  return lines.join('\\n');\n}\n\nconsole.log(buildScoreboard(players));\n"),
+                    new(
+                        "README.md",
+                        "json",
+                        "{\n  \"goal\": \"Sort scores first, then build the scoreboard line by line\"\n}\n"),
+                ];
+            }
+
+            if (learningTrack == "advanced")
+            {
+                return
+                [
+                    new(
+                        "src/main.js",
+                        "javascript",
+                        "const players = [{ name: 'Ari', score: 18 }, { name: 'Mina', score: 27 }, { name: 'Rex', score: 22 }];\n\nfunction buildScoreboard(entries) {\n  // TODO: build the scoreboard with a non-mutating sort and a compact functional chain\n  return '';\n}\n\nconsole.log(buildScoreboard(players));\n"),
+                    new(
+                        "README.md",
+                        "json",
+                        "{\n  \"goal\": \"Use a functional pipeline to return the ranked scoreboard\"\n}\n"),
+                ];
+            }
+
             return
             [
                 new(
@@ -128,6 +253,36 @@ public sealed class LearningContentService(DevFoundryDbContext context) : ILearn
                     "README.md",
                     "json",
                     "{\n  \"goal\": \"Return a sorted scoreboard with rank, name, and score\"\n}\n"),
+            ];
+        }
+
+        if (learningTrack == "beginner")
+        {
+            return
+            [
+                new(
+                    "src/main.js",
+                    "javascript",
+                    "const scores = [12, 30, 18, 42];\n\nfunction buildSummary(values) {\n  const lines = [];\n\n  for (const value of values) {\n    // TODO: push one formatted line into lines\n  }\n\n  return lines.join('\\n');\n}\n\nconsole.log(buildSummary(scores));\n"),
+                new(
+                    "README.md",
+                    "json",
+                    "{\n  \"goal\": \"Use one loop and build the result one line at a time\"\n}\n"),
+            ];
+        }
+
+        if (learningTrack == "advanced")
+        {
+            return
+            [
+                new(
+                    "src/main.js",
+                    "javascript",
+                    "const scores = [12, 30, 18, 42];\n\nfunction buildSummary(values) {\n  // TODO: transform values with map and join the formatted output\n  return '';\n}\n\nconsole.log(buildSummary(scores));\n"),
+                new(
+                    "README.md",
+                    "json",
+                    "{\n  \"goal\": \"Return a summary string using a concise functional pass\"\n}\n"),
             ];
         }
 
@@ -142,6 +297,140 @@ public sealed class LearningContentService(DevFoundryDbContext context) : ILearn
                 "json",
                 "{\n  \"goal\": \"Return a summary string with one line per score\"\n}\n"),
         ];
+    }
+
+    private static List<LessonHintDto> BuildHintsForLesson(string lessonTitle, string learningTrack)
+    {
+        if (lessonTitle.Contains("Nested", StringComparison.OrdinalIgnoreCase))
+        {
+            return learningTrack switch
+            {
+                "beginner" =>
+                [
+                    new("hint-1", "Outer loop first", "Start with the rows, then add a second loop for values inside each row."),
+                    new("hint-2", "Running total", "Create total inside the outer loop so each row starts fresh before you sum it."),
+                ],
+                "advanced" =>
+                [
+                    new("hint-1", "Map rows", "Map each row into a total, then format the totals into lines."),
+                    new("hint-2", "Reducer option", "Use reduce inside the map callback to collapse each row into one number."),
+                ],
+                _ =>
+                [
+                    new("hint-1", "Nested loops", "Loop outer rows first, then inner values to build a row total."),
+                ],
+            };
+        }
+
+        if (lessonTitle.Contains("Scoreboard", StringComparison.OrdinalIgnoreCase))
+        {
+            return learningTrack switch
+            {
+                "beginner" =>
+                [
+                    new("hint-1", "Copy before sort", "Use [...entries] before sort so you keep the original input intact."),
+                    new("hint-2", "Build lines", "After sorting, loop over the ranked players and push one formatted line per player."),
+                ],
+                "advanced" =>
+                [
+                    new("hint-1", "Pipeline", "Use a non-mutating sort followed by map and join for a compact scoreboard."),
+                    new("hint-2", "Rank index", "The map index gives you the rank, so you do not need a separate counter."),
+                ],
+                _ =>
+                [
+                    new("hint-1", "Sorting", "Use a copy of the array before sorting so starter values remain intact."),
+                ],
+            };
+        }
+
+        return learningTrack switch
+        {
+            "beginner" =>
+            [
+                new("hint-1", "Start simple", "Create an array of lines, loop through each value, then join once at the end."),
+                new("hint-2", "Formatting", "Push strings like `${index + 1}. Score: ${value}` as you loop."),
+            ],
+            "advanced" =>
+            [
+                new("hint-1", "Functional pass", "Map the values into formatted strings and join them with newline characters."),
+                new("hint-2", "Avoid extra state", "The array index from map can provide the rank without a manual counter."),
+            ],
+            _ =>
+            [
+                new("hint-1", "Need a starting point?", "Start with let summary = []; then push each formatted score inside the loop and join at the end."),
+                new("hint-2", "Formatting output", "Use template strings like `${index + 1}. Score: ${score}` to keep output readable."),
+            ],
+        };
+    }
+
+    private static string BuildReferenceSolutionForLesson(string lessonTitle, string learningTrack)
+    {
+        if (lessonTitle.Contains("Nested", StringComparison.OrdinalIgnoreCase))
+        {
+            return learningTrack switch
+            {
+                "beginner" => "function buildRowTotals(rows) {\n  const lines = [];\n  for (const row of rows) {\n    let total = 0;\n    for (const value of row) {\n      total += value;\n    }\n    lines.push(`Row total: ${total}`);\n  }\n  return lines.join('\\n');\n}",
+                "advanced" => "function buildRowTotals(rows) {\n  return rows\n    .map((row, index) => `Row ${index + 1}: ${row.reduce((total, value) => total + value, 0)}`)\n    .join('\\n');\n}",
+                _ => "function buildRowTotals(rows) {\n  const lines = [];\n  for (let i = 0; i < rows.length; i++) {\n    let total = 0;\n    for (let j = 0; j < rows[i].length; j++) {\n      total += rows[i][j];\n    }\n    lines.push(`Row ${i + 1}: ${total}`);\n  }\n  return lines.join('\\n');\n}",
+            };
+        }
+
+        if (lessonTitle.Contains("Scoreboard", StringComparison.OrdinalIgnoreCase))
+        {
+            return learningTrack switch
+            {
+                "beginner" => "function buildScoreboard(entries) {\n  const rankedPlayers = [...entries].sort((a, b) => b.score - a.score);\n  const lines = [];\n  for (let i = 0; i < rankedPlayers.length; i++) {\n    const player = rankedPlayers[i];\n    lines.push(`${i + 1}. ${player.name} - ${player.score}`);\n  }\n  return lines.join('\\n');\n}",
+                "advanced" => "function buildScoreboard(entries) {\n  return [...entries]\n    .toSorted((a, b) => b.score - a.score)\n    .map((entry, index) => `${index + 1}. ${entry.name} - ${entry.score}`)\n    .join('\\n');\n}",
+                _ => "function buildScoreboard(entries) {\n  return [...entries]\n    .sort((a, b) => b.score - a.score)\n    .map((entry, index) => `${index + 1}. ${entry.name} - ${entry.score}`)\n    .join('\\n');\n}",
+            };
+        }
+
+        return learningTrack switch
+        {
+            "beginner" => "function buildSummary(values) {\n  const lines = [];\n  for (const value of values) {\n    lines.push(`${lines.length + 1}. Score: ${value}`);\n  }\n  return lines.join('\\n');\n}",
+            "advanced" => "function buildSummary(values) {\n  return values\n    .map((value, index) => `${index + 1}. Score: ${value}`)\n    .join('\\n');\n}",
+            _ => "function buildSummary(values) {\n  const lines = [];\n  for (let i = 0; i < values.length; i++) {\n    lines.push(`${i + 1}. Score: ${values[i]}`);\n  }\n  return lines.join('\\n');\n}",
+        };
+    }
+
+    private static BranchPointDto? BuildBranchPoint(Lesson lesson)
+    {
+        if (lesson.BranchOptions.Count == 0)
+        {
+            return null;
+        }
+
+        return new BranchPointDto(
+            "Preferred solution path",
+            lesson.BranchOptions
+                .OrderBy(option => option.Order)
+                .Select(option => new BranchOptionDto(option.BranchId, option.Label, option.Description, option.Difficulty))
+                .ToList());
+    }
+
+    private static string BuildTrackDescription(string baseDescription, string learningTrack)
+    {
+        return learningTrack switch
+        {
+            "beginner" => $"{baseDescription} This track keeps the solution explicit and step-by-step.",
+            "advanced" => $"{baseDescription} This track favors compact, composable patterns and fewer manual steps.",
+            _ => baseDescription,
+        };
+    }
+
+    private static string NormalizeLearningTrack(string? learningTrack)
+    {
+        if (string.Equals(learningTrack, "beginner", StringComparison.OrdinalIgnoreCase))
+        {
+            return "beginner";
+        }
+
+        if (string.Equals(learningTrack, "advanced", StringComparison.OrdinalIgnoreCase))
+        {
+            return "advanced";
+        }
+
+        return "intermediate";
     }
 }
 
@@ -367,6 +656,35 @@ public sealed class ProgressService(DevFoundryDbContext context, IConfiguration 
             null);
     }
 
+    public async Task SaveBranchSelectionAsync(BranchSelectionRequest request, CancellationToken cancellationToken)
+    {
+        var progress = await context.CourseProgress
+            .FirstOrDefaultAsync(
+                entry => entry.UserId == request.UserId
+                    && entry.CourseId == request.CourseId
+                    && entry.LessonId == request.LessonId,
+                cancellationToken);
+
+        if (progress is null)
+        {
+            progress = new CourseProgress
+            {
+                UserId = request.UserId,
+                CourseId = request.CourseId,
+                LessonId = request.LessonId,
+                SelectedBranchId = request.BranchId,
+            };
+
+            context.CourseProgress.Add(progress);
+        }
+        else
+        {
+            progress.SelectedBranchId = request.BranchId;
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
     private static bool IsLessonCompleted(CourseProgress entry)
     {
         var completed = entry.CompletedSteps
@@ -399,6 +717,62 @@ public sealed class ProgressService(DevFoundryDbContext context, IConfiguration 
         }
 
         return "function buildSummary(values) {\n  const lines = [];\n  for (let i = 0; i < values.length; i++) {\n    lines.push(`${i + 1}. Score: ${values[i]}`);\n  }\n  return lines.join('\\n');\n}";
+    }
+}
+
+public sealed class LearningPreferencesService(DevFoundryDbContext context) : ILearningPreferencesService
+{
+    public async Task<LearningTrackPreferenceResponse> GetLearningTrackAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(entry => entry.Id == userId, cancellationToken);
+
+        return new LearningTrackPreferenceResponse(NormalizeLearningTrack(user?.LearningTrack));
+    }
+
+    public async Task<LearningTrackPreferenceResponse> SetLearningTrackAsync(
+        Guid userId,
+        UpdateLearningTrackPreferenceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var normalizedTrack = NormalizeLearningTrack(request.LearningTrack);
+        var user = await context.Users.FirstOrDefaultAsync(entry => entry.Id == userId, cancellationToken);
+
+        if (user is null)
+        {
+            user = new User
+            {
+                Id = userId,
+                Email = $"learner-{userId:N}@devfoundry.local",
+                DisplayName = "Learner",
+                LearningTrack = normalizedTrack,
+            };
+
+            context.Users.Add(user);
+        }
+        else
+        {
+            user.LearningTrack = normalizedTrack;
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+        return new LearningTrackPreferenceResponse(normalizedTrack);
+    }
+
+    private static string NormalizeLearningTrack(string? learningTrack)
+    {
+        if (string.Equals(learningTrack, "beginner", StringComparison.OrdinalIgnoreCase))
+        {
+            return "beginner";
+        }
+
+        if (string.Equals(learningTrack, "advanced", StringComparison.OrdinalIgnoreCase))
+        {
+            return "advanced";
+        }
+
+        return "intermediate";
     }
 }
 
@@ -605,9 +979,38 @@ public sealed class MockAiHintService : IAiHintService
 {
     public Task<AiHintResponse> GetHintAsync(AiHintRequest request, CancellationToken cancellationToken)
     {
+        var normalizedTrack = NormalizeLearningTrack(request.LearningTrack);
+
+        var hint = normalizedTrack switch
+        {
+            "beginner" => "Start from the visible structure in the starter code. Finish one small step first, then build the final string at the end.",
+            "advanced" => "Look for a concise transformation pipeline so each collection pass has one job and the return stays compact.",
+            _ => "Use a loop or focused collection pass to build one formatted line at a time, then return the combined string.",
+        };
+
+        var explanation = normalizedTrack switch
+        {
+            "beginner" => "Keep the control flow obvious: initialize a result container, fill it during iteration, and join or return once after the loop.",
+            "advanced" => "Prefer composable operations like map or reduce when they keep the intent clear and avoid extra mutable bookkeeping.",
+            _ => "Build the result progressively, keep formatting near the iteration, and avoid returning an empty literal.",
+        };
+
         return Task.FromResult(
-            new AiHintResponse(
-                "Use a loop to append one formatted line per score, then return one joined string.",
-                "Start with an array, push each line with template literals, and join using newline characters."));
+            new AiHintResponse(hint, explanation));
+    }
+
+    private static string NormalizeLearningTrack(string? learningTrack)
+    {
+        if (string.Equals(learningTrack, "beginner", StringComparison.OrdinalIgnoreCase))
+        {
+            return "beginner";
+        }
+
+        if (string.Equals(learningTrack, "advanced", StringComparison.OrdinalIgnoreCase))
+        {
+            return "advanced";
+        }
+
+        return "intermediate";
     }
 }

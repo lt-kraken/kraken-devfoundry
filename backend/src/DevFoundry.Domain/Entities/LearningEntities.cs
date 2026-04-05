@@ -14,6 +14,7 @@ public sealed class User : EntityBase
     public required string Email { get; set; }
     public required string DisplayName { get; set; }
     public int TotalXp { get; set; }
+    public string LearningTrack { get; set; } = "intermediate";
 }
 
 public sealed class Course : EntityBase

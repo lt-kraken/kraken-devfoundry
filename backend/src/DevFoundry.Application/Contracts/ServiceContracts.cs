@@ -8,7 +8,7 @@ namespace DevFoundry.Application.Contracts;
 public interface ILearningContentService
 {
     Task<IReadOnlyCollection<CourseSummaryDto>> GetCoursesAsync(CancellationToken cancellationToken);
-    Task<LessonDetailDto?> GetLessonAsync(Guid lessonId, CancellationToken cancellationToken);
+    Task<LessonDetailDto?> GetLessonAsync(Guid lessonId, string? learningTrack, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -19,6 +19,16 @@ public interface IProgressService
     Task<CourseProgressSnapshotResponse> GetCourseProgressAsync(Guid userId, Guid courseId, CancellationToken cancellationToken);
     Task<LessonAnswerSnapshotResponse?> GetLessonAnswerSnapshotAsync(Guid userId, Guid courseId, Guid lessonId, CancellationToken cancellationToken);
     Task<ProgressResult> SaveProgressAsync(ProgressRequest request, CancellationToken cancellationToken);
+    Task SaveBranchSelectionAsync(BranchSelectionRequest request, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Stores learner-wide preferences that should follow the user across devices.
+/// </summary>
+public interface ILearningPreferencesService
+{
+    Task<LearningTrackPreferenceResponse> GetLearningTrackAsync(Guid userId, CancellationToken cancellationToken);
+    Task<LearningTrackPreferenceResponse> SetLearningTrackAsync(Guid userId, UpdateLearningTrackPreferenceRequest request, CancellationToken cancellationToken);
 }
 
 /// <summary>

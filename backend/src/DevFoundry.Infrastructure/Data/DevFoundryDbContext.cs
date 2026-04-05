@@ -9,6 +9,7 @@ public sealed class DevFoundryDbContext(DbContextOptions<DevFoundryDbContext> op
     public DbSet<Course> Courses => Set<Course>();
     public DbSet<CourseModule> Modules => Set<CourseModule>();
     public DbSet<Lesson> Lessons => Set<Lesson>();
+    public DbSet<LessonBranch> LessonBranches => Set<LessonBranch>();
     public DbSet<LearningTask> Tasks => Set<LearningTask>();
     public DbSet<CourseProgress> CourseProgress => Set<CourseProgress>();
     public DbSet<CompletedStep> CompletedSteps => Set<CompletedStep>();
@@ -28,6 +29,11 @@ public sealed class DevFoundryDbContext(DbContextOptions<DevFoundryDbContext> op
             .HasOne<Course>()
             .WithMany()
             .HasForeignKey(lesson => lesson.CourseId);
+
+        modelBuilder.Entity<LessonBranch>()
+            .HasOne<Lesson>()
+            .WithMany(lesson => lesson.BranchOptions)
+            .HasForeignKey(branch => branch.LessonId);
 
         modelBuilder.Entity<CompletedStep>()
             .HasOne<CourseProgress>()

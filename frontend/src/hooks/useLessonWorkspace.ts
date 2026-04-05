@@ -6,10 +6,11 @@ import {
   getActiveTotalXp,
   getLesson,
   getRecommendedBranch,
+  loadLearningTrackPreference,
+  persistLearningTrackPreference,
   requestHint,
   runCode,
   selectBranch,
-  setActiveLearningTrack,
   submitProgress,
   validateStep,
 } from '../services/learningService'
@@ -33,7 +34,6 @@ export function useLessonWorkspace() {
   const [completionResult, setCompletionResult] = useState<SubmitProgressResult | null>(null)
   const [learningTrack, setLearningTrackState] = useState<LearningTrack>(() => getActiveLearningTrack())
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null)
-  const [showBranchSelector, setShowBranchSelector] = useState(false)
   const [showCodeComparison, setShowCodeComparison] = useState(false)
 
   const applyLearningTrack = async (nextLesson: LessonDetail, nextTrack: LearningTrack) => {
@@ -53,13 +53,14 @@ export function useLessonWorkspace() {
   }
 
   useEffect(() => {
-    getLesson()
-      .then((nextLesson) => {
+    loadLearningTrackPreference()
+      .then(async (storedTrack) => {
+        setLearningTrackState(storedTrack)
+        const nextLesson = await getLesson()
         setLesson(nextLesson)
         setCourseTitle(getActiveCourseTitle())
         setXp(getActiveTotalXp())
-        setShowBranchSelector(false)
-        void applyLearningTrack(nextLesson, learningTrack)
+        await applyLearningTrack(nextLesson, storedTrack)
       })
       .finally(() => setIsLoading(false))
   }, [])
@@ -206,7 +207,6 @@ export function useLessonWorkspace() {
       setLesson(nextLesson)
       setCourseTitle(getActiveCourseTitle())
       setXp(getActiveTotalXp())
-      setShowBranchSelector(false)
       await applyLearningTrack(nextLesson, learningTrack)
     } finally {
       setIsLoading(false)
@@ -236,17 +236,23 @@ export function useLessonWorkspace() {
 
   const handleBranchSelected = (branchId: string) => {
     setSelectedBranchId(branchId)
-    setShowBranchSelector(false)
   }
 
   const updateLearningTrack = async (track: LearningTrack) => {
-    setLearningTrackState(setActiveLearningTrack(track))
+    const nextTrack = await persistLearningTrackPreference(track)
+    setLearningTrackState(nextTrack)
 
     if (!lesson) {
       return
     }
 
-    await applyLearningTrack(lesson, track)
+    setAiHint('')
+    setRunResult(idleResult)
+    setSubmitError('')
+
+    const nextLesson = await getLesson(lesson.id)
+    setLesson(nextLesson)
+    await applyLearningTrack(nextLesson, nextTrack)
   }
 
   const handleShowSolution = () => {
@@ -275,7 +281,6 @@ export function useLessonWorkspace() {
     learningTrack,
     activeBranchOption,
     selectedBranchId,
-    showBranchSelector,
     showCodeComparison,
     setActiveFile,
     updateCode,

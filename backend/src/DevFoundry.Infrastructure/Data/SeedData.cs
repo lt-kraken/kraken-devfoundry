@@ -19,6 +19,7 @@ public static class SeedData
             Email = "learner@devfoundry.local",
             DisplayName = "MVP Learner",
             TotalXp = 240,
+            LearningTrack = "intermediate",
         };
 
         var course = new Course
@@ -83,12 +84,98 @@ public static class SeedData
             Prompt = "Sort players by score and return rank-numbered lines.",
         };
 
+        var lessonBranches = new[]
+        {
+            new LessonBranch
+            {
+                LessonId = lesson.Id,
+                BranchId = "guided-loop-builder",
+                Label = "Guided Loop Builder",
+                Description = "Stay explicit with one clear loop and a simple result array.",
+                Difficulty = "beginner",
+                Order = 1,
+            },
+            new LessonBranch
+            {
+                LessonId = lesson.Id,
+                BranchId = "summary-array-pattern",
+                Label = "Summary Array Pattern",
+                Description = "Build each row of output in an array, then join once at the end.",
+                Difficulty = "intermediate",
+                Order = 2,
+            },
+            new LessonBranch
+            {
+                LessonId = lesson.Id,
+                BranchId = "functional-summary-pass",
+                Label = "Functional Summary Pass",
+                Description = "Lean on map and join for a shorter, more composable solution.",
+                Difficulty = "advanced",
+                Order = 3,
+            },
+            new LessonBranch
+            {
+                LessonId = lessonTwo.Id,
+                BranchId = "row-walkthrough",
+                Label = "Row-by-Row Walkthrough",
+                Description = "Use one outer loop and one inner loop with explicit running totals.",
+                Difficulty = "beginner",
+                Order = 1,
+            },
+            new LessonBranch
+            {
+                LessonId = lessonTwo.Id,
+                BranchId = "loop-approach",
+                Label = "Manual Nested Loops",
+                Description = "Solve using traditional for loops for full control.",
+                Difficulty = "intermediate",
+                Order = 2,
+            },
+            new LessonBranch
+            {
+                LessonId = lessonTwo.Id,
+                BranchId = "functional-approach",
+                Label = "Functional Methods",
+                Description = "Use map and reduce for a more functional style.",
+                Difficulty = "advanced",
+                Order = 3,
+            },
+            new LessonBranch
+            {
+                LessonId = lessonThree.Id,
+                BranchId = "rank-then-print",
+                Label = "Rank Then Print",
+                Description = "Sort first, then format each ranked player with one straightforward pass.",
+                Difficulty = "beginner",
+                Order = 1,
+            },
+            new LessonBranch
+            {
+                LessonId = lessonThree.Id,
+                BranchId = "pipeline-scoreboard",
+                Label = "Pipeline Scoreboard",
+                Description = "Chain sorting and formatting to keep the solution compact and readable.",
+                Difficulty = "intermediate",
+                Order = 2,
+            },
+            new LessonBranch
+            {
+                LessonId = lessonThree.Id,
+                BranchId = "reducer-scoreboard",
+                Label = "Reducer Scoreboard",
+                Description = "Compose the final scoreboard through a denser functional pipeline.",
+                Difficulty = "advanced",
+                Order = 3,
+            },
+        };
+
         context.Users.Add(user);
         context.Courses.Add(course);
         context.Modules.Add(module);
         context.Lessons.Add(lesson);
         context.Lessons.Add(lessonTwo);
         context.Lessons.Add(lessonThree);
+        context.LessonBranches.AddRange(lessonBranches);
         context.Tasks.Add(task);
         context.Tasks.Add(taskTwo);
         context.Tasks.Add(taskThree);

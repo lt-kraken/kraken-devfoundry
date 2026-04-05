@@ -61,6 +61,7 @@ export type LessonDetail = {
   hints: LessonHint[]
   files: LessonFile[]
   activeFileId: string
+  referenceSolution?: string
   branchPoint?: BranchPoint
   codeAnnotations?: CodeAnnotation[]
 }

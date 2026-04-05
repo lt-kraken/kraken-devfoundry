@@ -36,7 +36,13 @@ app.MapGet("/courses", async (ILearningContentService service, CancellationToken
 
 app.MapGet("/lessons/{id:guid}", async (Guid id, ILearningContentService service, CancellationToken cancellationToken) =>
 {
-	var lesson = await service.GetLessonAsync(id, cancellationToken);
+	var lesson = await service.GetLessonAsync(id, null, cancellationToken);
+	return lesson is null ? Results.NotFound() : Results.Ok(lesson);
+});
+
+app.MapGet("/lessons/{id:guid}/{track}", async (Guid id, string track, ILearningContentService service, CancellationToken cancellationToken) =>
+{
+	var lesson = await service.GetLessonAsync(id, track, cancellationToken);
 	return lesson is null ? Results.NotFound() : Results.Ok(lesson);
 });
 
@@ -65,6 +71,24 @@ app.MapGet("/progress/{userId:guid}/{courseId:guid}/{lessonId:guid}/answer", asy
 {
 	var response = await service.GetLessonAnswerSnapshotAsync(userId, courseId, lessonId, cancellationToken);
 	return response is null ? Results.NotFound() : Results.Ok(response);
+});
+
+app.MapPost("/progress/branch", async (BranchSelectionRequest request, IProgressService service, CancellationToken cancellationToken) =>
+{
+	await service.SaveBranchSelectionAsync(request, cancellationToken);
+	return Results.NoContent();
+});
+
+app.MapGet("/users/{userId:guid}/preferences/learning-track", async (Guid userId, ILearningPreferencesService service, CancellationToken cancellationToken) =>
+{
+	var response = await service.GetLearningTrackAsync(userId, cancellationToken);
+	return Results.Ok(response);
+});
+
+app.MapPut("/users/{userId:guid}/preferences/learning-track", async (Guid userId, UpdateLearningTrackPreferenceRequest request, ILearningPreferencesService service, CancellationToken cancellationToken) =>
+{
+	var response = await service.SetLearningTrackAsync(userId, request, cancellationToken);
+	return Results.Ok(response);
 });
 
 app.MapPost("/code/run", async (CodeRunRequest request, ICodeExecutionService service, CancellationToken cancellationToken) =>

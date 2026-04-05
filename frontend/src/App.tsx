@@ -111,7 +111,7 @@ function App() {
           userCode={activeFile.content}
           referenceCode={
             activeFile.path === 'src/main.js'
-              ? `const scores = [12, 30, 18, 42]\n\nfunction buildSummary(values) {\n  let result = []\n  for (let i = 0; i < values.length; i++) {\n    result.push(\`\${i + 1}. Score: \${values[i]}\`)\n  }\n  return result.join('\\n')\n}\n\nconsole.log(buildSummary(scores))`
+              ? (lesson.referenceSolution ?? activeFile.starterContent)
               : activeFile.starterContent
           }
           onClose={handleCloseSolution}

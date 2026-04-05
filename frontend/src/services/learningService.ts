@@ -1,4 +1,4 @@
-import { getMockLessonById, getMockNextLessonId, mockLesson, mockLessons } from '../data/mockLesson'
+import { getMockHint, getMockLessonById, getMockNextLessonId, mockLesson, mockLessons } from '../data/mockLesson'
 import type {
   BranchOption,
   BranchPoint,
@@ -26,7 +26,10 @@ type LessonResponse = {
   description: string
   xpReward: number
   steps: { id: string; label: string; completed: boolean }[]
+  hints: { id: string; title: string; content: string }[]
   files: { path: string; language: 'javascript' | 'typescript' | 'html' | 'css' | 'json'; starterCode: string }[]
+  referenceCode: string
+  branchPoint?: BranchPoint
 }
 
 type ProgressResponse = {
@@ -41,6 +44,10 @@ type ProgressResponse = {
 type CourseProgressResponse = {
   totalXp: number
   completedLessonIds: string[]
+}
+
+type LearningTrackPreferenceResponse = {
+  learningTrack: LearningTrack
 }
 
 const activeUserId = '00000000-0000-0000-0000-000000000001'
@@ -136,7 +143,7 @@ export async function getLesson(lessonId?: string): Promise<LessonDetail> {
       const sections = buildApiSections(courses, selectedCourseId, completedLessonIds)
 
       if (targetLessonId) {
-        const lessonResponse = await fetch(`${apiBaseUrl}/lessons/${targetLessonId}`)
+        const lessonResponse = await fetch(`${apiBaseUrl}/lessons/${targetLessonId}/${activeLearningTrack}`)
         if (!lessonResponse.ok) throw new Error(`Failed to fetch lesson: ${lessonResponse.status}`)
         const lesson = (await lessonResponse.json()) as LessonResponse
 
@@ -147,13 +154,7 @@ export async function getLesson(lessonId?: string): Promise<LessonDetail> {
           xpReward: lesson.xpReward,
           sections,
           steps: lesson.steps,
-          hints: [
-            {
-              id: 'hint-api-1',
-              title: 'Hint',
-              content: 'Use the AI hint panel for contextual guidance.',
-            },
-          ],
+          hints: lesson.hints,
           files: lesson.files.map((file, index) => ({
             id: `file-${index + 1}`,
             path: file.path,
@@ -162,6 +163,8 @@ export async function getLesson(lessonId?: string): Promise<LessonDetail> {
             content: file.starterCode,
           })),
           activeFileId: 'file-1',
+          referenceSolution: lesson.referenceCode,
+          branchPoint: lesson.branchPoint,
         }
       }
     } catch (error) {
@@ -170,7 +173,7 @@ export async function getLesson(lessonId?: string): Promise<LessonDetail> {
   }
 
   await wait(180)
-  const nextMockLesson = getMockLessonById(lessonId ?? mockLesson.id)
+  const nextMockLesson = getMockLessonById(lessonId ?? mockLesson.id, activeLearningTrack)
   return {
     ...nextMockLesson,
     sections: structuredClone(activeSections),
@@ -315,6 +318,45 @@ export function setActiveLearningTrack(track: LearningTrack): LearningTrack {
   return activeLearningTrack
 }
 
+export async function loadLearningTrackPreference(): Promise<LearningTrack> {
+  if (useApi) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/users/${activeUserId}/preferences/learning-track`)
+      if (!response.ok) throw new Error(`Learning track fetch failed: ${response.status}`)
+
+      const payload = (await response.json()) as LearningTrackPreferenceResponse
+      return setActiveLearningTrack(payload.learningTrack)
+    } catch (error) {
+      console.error('[learningService] Failed to fetch learning track preference via API, falling back to local storage:', error)
+    }
+  }
+
+  return activeLearningTrack
+}
+
+export async function persistLearningTrackPreference(track: LearningTrack): Promise<LearningTrack> {
+  const nextTrack = setActiveLearningTrack(track)
+
+  if (useApi) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/users/${activeUserId}/preferences/learning-track`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ learningTrack: nextTrack }),
+      })
+
+      if (!response.ok) throw new Error(`Learning track update failed: ${response.status}`)
+
+      const payload = (await response.json()) as LearningTrackPreferenceResponse
+      return setActiveLearningTrack(payload.learningTrack)
+    } catch (error) {
+      console.error('[learningService] Failed to persist learning track via API, falling back to local storage:', error)
+    }
+  }
+
+  return nextTrack
+}
+
 export function getRecommendedBranch(
   branchPoint: BranchPoint,
   learningTrack: LearningTrack,
@@ -345,6 +387,7 @@ export async function requestHint(lessonId: string, stepId: string, currentCode:
           lessonId,
           stepId,
           currentCode,
+          learningTrack: activeLearningTrack,
         }),
       })
 
@@ -358,7 +401,7 @@ export async function requestHint(lessonId: string, stepId: string, currentCode:
   }
 
   await wait(320)
-  return `AI hint for ${stepId}: keep your loop body focused, then combine the result once.`
+  return getMockHint(lessonId, stepId, activeLearningTrack)
 }
 
 export async function selectBranch(lessonId: string, branchId: string): Promise<void> {
