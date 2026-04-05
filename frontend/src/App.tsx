@@ -15,7 +15,6 @@ function App() {
     submitError,
     canSubmit,
     totalSteps,
-    canMarkStepsFromRun,
     isCompletionModalOpen,
     completionResult,
     completedCount,
@@ -26,7 +25,6 @@ function App() {
     runCurrentCode,
     submitTask,
     getHint,
-    markAllStepsFromPassingRun,
     loadLessonById,
     goToNextLesson,
     closeCompletionModal,
@@ -64,7 +62,6 @@ function App() {
         canSubmit={canSubmit}
         completedCount={completedCount}
         totalSteps={totalSteps}
-        canMarkStepsFromRun={canMarkStepsFromRun}
         onSelectFile={setActiveFile}
         onUpdateCode={updateCode}
         onRun={runCurrentCode}
@@ -72,7 +69,6 @@ function App() {
         onSubmit={submitTask}
         onToggleStep={toggleStep}
         onRequestHint={getHint}
-        onMarkFromPassingRun={markAllStepsFromPassingRun}
       />
 
       {isCompletionModalOpen && completionResult ? (

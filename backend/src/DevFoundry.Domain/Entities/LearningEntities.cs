@@ -53,6 +53,10 @@ public sealed class CourseProgress : EntityBase
     public Guid CourseId { get; set; }
     public Guid LessonId { get; set; }
     public int XpEarned { get; set; }
+    public bool IsSubmissionLocked { get; set; }
+    public string AnswerRetentionKind { get; set; } = "none";
+    public string? StoredAnswerSnapshot { get; set; }
+    public DateTimeOffset? SubmittedAtUtc { get; set; }
     public ICollection<CompletedStep> CompletedSteps { get; set; } = new List<CompletedStep>();
 }
 

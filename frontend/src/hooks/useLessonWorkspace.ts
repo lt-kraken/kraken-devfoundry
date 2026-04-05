@@ -45,7 +45,6 @@ export function useLessonWorkspace() {
   const completedCount = lesson?.steps.filter((step) => step.completed).length ?? 0
   const totalSteps = lesson?.steps.length ?? 0
   const canSubmit = totalSteps > 0 && completedCount === totalSteps && !isSubmitting
-  const canMarkStepsFromRun = runResult.status === 'success' && completedCount < totalSteps
 
   const setActiveFile = (fileId: string) => {
     setLesson((current) => (current ? { ...current, activeFileId: fileId } : current))
@@ -96,7 +95,20 @@ export function useLessonWorkspace() {
   const runCurrentCode = async () => {
     if (!activeFile || !lesson) return
     setRunResult({ status: 'running', output: ['Running...'] })
-    setRunResult(await runCode(lesson.id, activeFile.content))
+    const result = await runCode(lesson.id, activeFile.content)
+    setRunResult(result)
+
+    if (result.status === 'success') {
+      setLesson((current) => {
+        if (!current) return current
+
+        return {
+          ...current,
+          steps: current.steps.map((step) => ({ ...step, completed: true })),
+        }
+      })
+      setSubmitError('')
+    }
   }
 
   const submitTask = async () => {
@@ -133,19 +145,6 @@ export function useLessonWorkspace() {
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const markAllStepsFromPassingRun = () => {
-    if (!lesson || runResult.status !== 'success') return
-
-    setLesson((current) => {
-      if (!current) return current
-      return {
-        ...current,
-        steps: current.steps.map((step) => ({ ...step, completed: true })),
-      }
-    })
-    setSubmitError('')
   }
 
   const loadLessonById = async (lessonId: string) => {
@@ -197,7 +196,6 @@ export function useLessonWorkspace() {
     submitError,
     canSubmit,
     totalSteps,
-    canMarkStepsFromRun,
     isCompletionModalOpen,
     completionResult,
     activeFile,
@@ -209,7 +207,6 @@ export function useLessonWorkspace() {
     runCurrentCode,
     submitTask,
     getHint,
-    markAllStepsFromPassingRun,
     loadLessonById,
     goToNextLesson,
     closeCompletionModal,

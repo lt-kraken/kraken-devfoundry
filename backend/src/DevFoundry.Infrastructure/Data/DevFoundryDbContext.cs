@@ -12,6 +12,8 @@ public sealed class DevFoundryDbContext(DbContextOptions<DevFoundryDbContext> op
     public DbSet<LearningTask> Tasks => Set<LearningTask>();
     public DbSet<CourseProgress> CourseProgress => Set<CourseProgress>();
     public DbSet<CompletedStep> CompletedSteps => Set<CompletedStep>();
+    public DbSet<CodeRun> CodeRuns => Set<CodeRun>();
+    public DbSet<CodeRunResult> CodeRunResults => Set<CodeRunResult>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

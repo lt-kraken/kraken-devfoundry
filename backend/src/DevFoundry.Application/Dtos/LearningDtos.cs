@@ -36,6 +36,12 @@ public sealed record ProgressResult(bool Succeeded, ProgressResponse? Progress, 
 
 public sealed record CourseProgressSnapshotResponse(int TotalXp, IReadOnlyCollection<Guid> CompletedLessonIds);
 
+public sealed record LessonAnswerSnapshotResponse(
+    Guid LessonId,
+    bool IsSubmissionLocked,
+    string RetentionKind,
+    string Answer);
+
 public sealed record CodeRunRequest(Guid UserId, Guid LessonId, string Language, string SourceCode);
 
 public sealed record CodeRunResponse(bool Passed, int RuntimeMs, IReadOnlyCollection<string> Logs);

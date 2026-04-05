@@ -9,10 +9,8 @@ type InstructionPanelProps = {
   steps: LessonStep[]
   xpReward: number
   aiHint: string
-  canMarkStepsFromRun: boolean
   onToggleStep: (stepId: string) => void
   onRequestHint: (stepId: string) => void
-  onMarkFromPassingRun: () => void
 }
 
 export function InstructionPanel({
@@ -21,10 +19,8 @@ export function InstructionPanel({
   steps,
   xpReward,
   aiHint,
-  canMarkStepsFromRun,
   onToggleStep,
   onRequestHint,
-  onMarkFromPassingRun,
 }: InstructionPanelProps) {
   const [isHintOpen, setIsHintOpen] = useState(true)
   const completedCount = steps.filter((step) => step.completed).length
@@ -45,14 +41,9 @@ export function InstructionPanel({
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={onMarkFromPassingRun}
-            disabled={!canMarkStepsFromRun}
-            className="mb-3 w-full rounded-md border border-cyan-700/30 bg-cyan-700/10 px-3 py-2 text-xs font-semibold text-cyan-900 transition hover:bg-cyan-700/20 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Mark all steps from passing run
-          </button>
+          <p className="mb-3 rounded-md border border-cyan-700/30 bg-cyan-700/10 px-3 py-2 text-xs text-cyan-900">
+            Steps auto-complete after a successful Run. Review and adjust manually if needed before submitting.
+          </p>
 
           <div className="space-y-2">
             {steps.map((step) => (

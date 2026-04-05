@@ -4,6 +4,8 @@ namespace DevFoundry.Infrastructure.Data;
 
 public static class SeedData
 {
+    private static readonly Guid SeedUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+
     public static async Task EnsureSeededAsync(DevFoundryDbContext context, CancellationToken cancellationToken)
     {
         if (context.Courses.Any())
@@ -13,6 +15,7 @@ public static class SeedData
 
         var user = new User
         {
+            Id = SeedUserId,
             Email = "learner@devfoundry.local",
             DisplayName = "MVP Learner",
             TotalXp = 240,

@@ -18,7 +18,6 @@ type LessonWorkspaceProps = {
   canSubmit: boolean
   completedCount: number
   totalSteps: number
-  canMarkStepsFromRun: boolean
   onSelectFile: (fileId: string) => void
   onUpdateCode: (value: string) => void
   onRun: () => void
@@ -26,7 +25,6 @@ type LessonWorkspaceProps = {
   onSubmit: () => void
   onToggleStep: (stepId: string) => void
   onRequestHint: (stepId: string) => void
-  onMarkFromPassingRun: () => void
 }
 
 export function LessonWorkspace({
@@ -37,7 +35,6 @@ export function LessonWorkspace({
   canSubmit,
   completedCount,
   totalSteps,
-  canMarkStepsFromRun,
   onSelectFile,
   onUpdateCode,
   onRun,
@@ -45,7 +42,6 @@ export function LessonWorkspace({
   onSubmit,
   onToggleStep,
   onRequestHint,
-  onMarkFromPassingRun,
 }: LessonWorkspaceProps) {
   const activeFile = lesson.files.find((file) => file.id === lesson.activeFileId)
 
@@ -95,10 +91,8 @@ export function LessonWorkspace({
         steps={lesson.steps}
         xpReward={lesson.xpReward}
         aiHint={aiHint}
-        canMarkStepsFromRun={canMarkStepsFromRun}
         onToggleStep={onToggleStep}
         onRequestHint={onRequestHint}
-        onMarkFromPassingRun={onMarkFromPassingRun}
       />
     </div>
   )

@@ -28,7 +28,7 @@ public static class DependencyInjection
 
         services.AddScoped<ILearningContentService, LearningContentService>();
         services.AddScoped<IProgressService, ProgressService>();
-        services.AddSingleton<ICodeExecutionService, MockCodeExecutionService>();
+        services.AddScoped<ICodeExecutionService, MockCodeExecutionService>();
         services.AddSingleton<IAiHintService, MockAiHintService>();
 
         return services;
