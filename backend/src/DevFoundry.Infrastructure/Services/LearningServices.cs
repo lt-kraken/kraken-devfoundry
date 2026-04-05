@@ -624,13 +624,18 @@ public sealed class ProgressService(DevFoundryDbContext context, IConfiguration 
         await context.SaveChangesAsync(cancellationToken);
 
         Guid? nextLessonId = null;
-        var orderedLessonIds = await context.Lessons
+        var courseLessons = await context.Lessons
             .AsNoTracking()
             .Where(entry => entry.CourseId == request.CourseId)
-            .OrderBy(entry => entry.CreatedAtUtc)
+            .Select(entry => new { entry.Id, entry.Title, entry.CreatedAtUtc })
+            .ToListAsync(cancellationToken);
+
+        var orderedLessonIds = courseLessons
+            .OrderBy(entry => GetLessonTrackPriority(entry.Title, user?.LearningTrack))
+            .ThenBy(entry => entry.CreatedAtUtc)
             .ThenBy(entry => entry.Id)
             .Select(entry => entry.Id)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         var currentIndex = orderedLessonIds.FindIndex(entry => entry == request.LessonId);
         if (currentIndex >= 0 && currentIndex + 1 < orderedLessonIds.Count)
@@ -702,6 +707,42 @@ public sealed class ProgressService(DevFoundryDbContext context, IConfiguration 
         }
 
         return AnswerRetentionMode.SystemOnly;
+    }
+
+    private static int GetLessonTrackPriority(string lessonTitle, string? learningTrack)
+    {
+        var normalizedTrack = NormalizeLearningTrack(learningTrack);
+
+        if (normalizedTrack == "advanced")
+        {
+            if (lessonTitle.Contains("Nested", StringComparison.OrdinalIgnoreCase)) return 0;
+            if (lessonTitle.Contains("Scoreboard", StringComparison.OrdinalIgnoreCase)) return 1;
+            if (lessonTitle.Contains("Controlled", StringComparison.OrdinalIgnoreCase)
+                || lessonTitle.Contains("Repetition", StringComparison.OrdinalIgnoreCase)) return 2;
+            return 10;
+        }
+
+        if (lessonTitle.Contains("Controlled", StringComparison.OrdinalIgnoreCase)
+            || lessonTitle.Contains("Repetition", StringComparison.OrdinalIgnoreCase)) return 0;
+        if (lessonTitle.Contains("Nested", StringComparison.OrdinalIgnoreCase)) return 1;
+        if (lessonTitle.Contains("Scoreboard", StringComparison.OrdinalIgnoreCase)) return 2;
+
+        return 10;
+    }
+
+    private static string NormalizeLearningTrack(string? learningTrack)
+    {
+        if (string.Equals(learningTrack, "beginner", StringComparison.OrdinalIgnoreCase))
+        {
+            return "beginner";
+        }
+
+        if (string.Equals(learningTrack, "advanced", StringComparison.OrdinalIgnoreCase))
+        {
+            return "advanced";
+        }
+
+        return "intermediate";
     }
 
     private static string BuildSystemAnswerForLesson(string lessonTitle)

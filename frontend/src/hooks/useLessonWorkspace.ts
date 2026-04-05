@@ -57,7 +57,10 @@ export function useLessonWorkspace() {
       .then(async (storedTrack) => {
         setLearningTrackState(storedTrack)
         const nextLesson = await getLesson()
-        setLesson(nextLesson)
+        setLesson({
+          ...nextLesson,
+          sections: getActiveSections(),
+        })
         setCourseTitle(getActiveCourseTitle())
         setXp(getActiveTotalXp())
         await applyLearningTrack(nextLesson, storedTrack)
@@ -204,7 +207,10 @@ export function useLessonWorkspace() {
 
     try {
       const nextLesson = await getLesson(lessonId)
-      setLesson(nextLesson)
+      setLesson({
+        ...nextLesson,
+        sections: getActiveSections(),
+      })
       setCourseTitle(getActiveCourseTitle())
       setXp(getActiveTotalXp())
       await applyLearningTrack(nextLesson, learningTrack)
@@ -251,7 +257,10 @@ export function useLessonWorkspace() {
     setSubmitError('')
 
     const nextLesson = await getLesson(lesson.id)
-    setLesson(nextLesson)
+    setLesson({
+      ...nextLesson,
+      sections: getActiveSections(),
+    })
     await applyLearningTrack(nextLesson, nextTrack)
   }
 

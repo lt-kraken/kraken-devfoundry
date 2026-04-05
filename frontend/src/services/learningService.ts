@@ -1,4 +1,4 @@
-import { getMockHint, getMockLessonById, getMockNextLessonId, mockLesson, mockLessons } from '../data/mockLesson'
+import { getMockHint, getMockLessonById, mockLesson, mockLessons } from '../data/mockLesson'
 import type {
   BranchOption,
   BranchPoint,
@@ -56,6 +56,11 @@ let activeCourseTitle = 'JavaScript Foundations'
 let activeTotalXp = 240
 let activeSections = structuredClone(mockLesson.sections)
 
+type LessonNavEntry = {
+  id: string
+  title: string
+}
+
 const isLearningTrack = (value: string | null): value is LearningTrack =>
   value === 'beginner' || value === 'intermediate' || value === 'advanced'
 
@@ -74,6 +79,102 @@ const persistLearningTrack = (track: LearningTrack) => {
   if (typeof window !== 'undefined') {
     window.localStorage.setItem(learningTrackStorageKey, track)
   }
+}
+
+const lessonPriorityByTrack: Record<LearningTrack, RegExp[]> = {
+  beginner: [/controlled|repetition/i, /nested|iteration/i, /scoreboard|practice/i],
+  intermediate: [/controlled|repetition/i, /nested|iteration/i, /scoreboard|practice/i],
+  advanced: [/nested|iteration/i, /scoreboard|practice/i, /controlled|repetition/i],
+}
+
+const getLessonPriority = (title: string, track: LearningTrack) => {
+  const order = lessonPriorityByTrack[track]
+  const foundIndex = order.findIndex((pattern) => pattern.test(title))
+  return foundIndex >= 0 ? foundIndex : order.length + 1
+}
+
+const sortLessonsForTrack = (lessons: LessonNavEntry[], track: LearningTrack) =>
+  [...lessons].sort((left, right) => {
+    const leftPriority = getLessonPriority(left.title, track)
+    const rightPriority = getLessonPriority(right.title, track)
+
+    if (leftPriority !== rightPriority) {
+      return leftPriority - rightPriority
+    }
+
+    return left.title.localeCompare(right.title)
+  })
+
+const getCompletedLessonIdsFromSections = (sections: LessonDetail['sections']) =>
+  new Set(
+    sections.flatMap((section) => section.items.filter((item) => item.completed).map((item) => item.id)),
+  )
+
+const buildTrackSections = (
+  lessons: LessonNavEntry[],
+  track: LearningTrack,
+  completedLessonIds: Set<string>,
+): LessonDetail['sections'] => {
+  const sortedLessons = sortLessonsForTrack(lessons, track)
+  const toNavItems = (entries: LessonNavEntry[]) =>
+    entries.map((lesson) => ({
+      id: lesson.id,
+      title: lesson.title,
+      completed: completedLessonIds.has(lesson.id),
+    }))
+
+  if (track === 'beginner') {
+    return [
+      {
+        id: 'beginner-foundations',
+        title: 'Foundations Path',
+        items: toNavItems(sortedLessons.slice(0, 2)),
+      },
+      {
+        id: 'beginner-practice',
+        title: 'Practice Path',
+        items: toNavItems(sortedLessons.slice(2)),
+      },
+    ].filter((section) => section.items.length > 0)
+  }
+
+  if (track === 'advanced') {
+    return [
+      {
+        id: 'advanced-core',
+        title: 'Challenge Path',
+        items: toNavItems(sortedLessons.slice(0, 2)),
+      },
+      {
+        id: 'advanced-reinforcement',
+        title: 'Reinforcement',
+        items: toNavItems(sortedLessons.slice(2)),
+      },
+    ].filter((section) => section.items.length > 0)
+  }
+
+  return [
+    {
+      id: 'intermediate-guided',
+      title: 'Guided Path',
+      items: toNavItems(sortedLessons),
+    },
+  ]
+}
+
+const buildMockSectionsForTrack = (track: LearningTrack) => {
+  const completedLessonIds = getCompletedLessonIdsFromSections(activeSections)
+  const lessons = mockLessons.map((lesson) => ({ id: lesson.id, title: lesson.title }))
+  return buildTrackSections(lessons, track, completedLessonIds)
+}
+
+const getTrackOrderedLessonIds = (track: LearningTrack): string[] => {
+  const orderedLessons = sortLessonsForTrack(
+    mockLessons.map((lesson) => ({ id: lesson.id, title: lesson.title })),
+    track,
+  )
+
+  return orderedLessons.map((lesson) => lesson.id)
 }
 
 const syncCompletionInSections = (completedLessonId: string) => {
@@ -104,17 +205,7 @@ const buildApiSections = (
 
   activeCourseId = selectedCourse.id
   activeCourseTitle = selectedCourse.title
-  activeSections = [
-    {
-      id: 'guided-path',
-      title: 'Guided Path',
-      items: selectedCourse.lessons.map((lesson) => ({
-        id: lesson.id,
-        title: lesson.title,
-        completed: completedLessonIds.has(lesson.id),
-      })),
-    },
-  ]
+  activeSections = buildTrackSections(selectedCourse.lessons, activeLearningTrack, completedLessonIds)
 
   return structuredClone(activeSections)
 }
@@ -173,6 +264,7 @@ export async function getLesson(lessonId?: string): Promise<LessonDetail> {
   }
 
   await wait(180)
+  activeSections = buildMockSectionsForTrack(activeLearningTrack)
   const nextMockLesson = getMockLessonById(lessonId ?? mockLesson.id, activeLearningTrack)
   return {
     ...nextMockLesson,
@@ -275,7 +367,9 @@ export async function submitProgress(lessonId: string, completedSteps: string[])
     throw new Error('Complete all required steps before submitting.')
   }
 
-  const nextLessonId = getMockNextLessonId(lessonId)
+  const orderedLessonIds = getTrackOrderedLessonIds(activeLearningTrack)
+  const currentIndex = orderedLessonIds.findIndex((id) => id === lessonId)
+  const nextLessonId = currentIndex >= 0 ? orderedLessonIds[currentIndex + 1] : undefined
   syncCompletionInSections(lessonId)
 
   activeTotalXp += 120
@@ -315,6 +409,7 @@ export function getActiveLearningTrack(): LearningTrack {
 export function setActiveLearningTrack(track: LearningTrack): LearningTrack {
   activeLearningTrack = track
   persistLearningTrack(track)
+  activeSections = buildMockSectionsForTrack(track)
   return activeLearningTrack
 }
 
